@@ -1,0 +1,177 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Search, Plus, Download, FileSearch } from 'lucide-react'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { CircularProgress } from '@/components/shared/CircularProgress'
+import { Card, Button, Input, Select, Spinner } from '@/components/ui'
+import { atsService } from '@/services/ats.service'
+import { jobService } from '@/services/job.service'
+import { useQuery } from '@tanstack/react-query'
+import { getLabelColor, formatDateTime, exportToCSV } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth.store'
+import { LABEL_FILTER_OPTIONS, buildJobFilterOptions } from '@/lib/filters'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from 'recharts'
+
+const SCORE_BINS = [
+  { range: '91–100', count: 0, color: '#10b981' },
+  { range: '76–90', count: 0, color: '#22c55e' },
+  { range: '61–75', count: 0, color: '#eab308' },
+  { range: '41–60', count: 0, color: '#f97316' },
+  { range: '0–40', count: 0, color: '#ef4444' },
+]
+
+export function ATSEvaluationsPage() {
+  const { user } = useAuthStore()
+  const orgId = user?.organizationId ?? 'org1'
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
+  const [jobFilter, setJobFilter] = useState('all')
+  const [labelFilter, setLabelFilter] = useState('all')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['evaluations', orgId, search, jobFilter, labelFilter],
+    queryFn: () => atsService.getAll(orgId, { search, jobId: jobFilter, label: labelFilter, perPage: 100 }),
+  })
+
+  const { data: jobsData } = useQuery({
+    queryKey: ['jobs', orgId, 'filter-options'],
+    queryFn: () => jobService.getAll(orgId, { perPage: 100 }),
+  })
+
+  const jobOptions = buildJobFilterOptions(jobsData?.data ?? [])
+
+  // Deep-clone so we never mutate the module-level constant (which is frozen in dev mode)
+  const scoreBins = SCORE_BINS.map(b => ({ ...b }))
+  data?.data.forEach(ev => {
+    if (ev.score >= 91) scoreBins[0].count++
+    else if (ev.score >= 76) scoreBins[1].count++
+    else if (ev.score >= 61) scoreBins[2].count++
+    else if (ev.score >= 41) scoreBins[3].count++
+    else scoreBins[4].count++
+  })
+
+  function handleExportCSV() {
+    if (!data?.data) return
+    exportToCSV(
+      data.data.map(ev => ({
+        Candidate: ev.candidateName,
+        Email: ev.candidateEmail,
+        Job: ev.jobTitle,
+        Score: ev.score,
+        Label: ev.label,
+        Date: ev.evaluatedAt,
+        'Evaluated By': ev.evaluatedBy,
+      })),
+      'ats-evaluations'
+    )
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="ATS Evaluations"
+        description="Review and compare all candidate evaluations"
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => navigate('/org/evaluations/new')}>
+              New Evaluation
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Score Distribution Chart */}
+      {data && data.data.length > 0 && (
+        <Card className="mb-5">
+          <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Score Distribution</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{data.data.length} evaluations total</p>
+            </div>
+            <div className="flex-1 h-24 min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={scoreBins} barSize={28}>
+                  <XAxis dataKey="range" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '11px' }}
+                  />
+                  <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                    {scoreBins.map((bin, i) => (
+                      <rect key={i} fill={bin.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Card padding="none">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+          <Input
+            placeholder="Search by candidate or job…"
+            leftIcon={<Search className="w-4 h-4" />}
+            className="max-w-xs"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <Select
+            options={jobOptions}
+            className="sm:w-56"
+            value={jobFilter}
+            onChange={e => setJobFilter(e.target.value)}
+          />
+          <Select
+            options={LABEL_FILTER_OPTIONS}
+            className="sm:w-44"
+            value={labelFilter}
+            onChange={e => setLabelFilter(e.target.value)}
+          />
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-16"><Spinner /></div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {data?.data.length === 0 ? (
+              <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
+                <FileSearch className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                No evaluations found
+              </div>
+            ) : (
+              data?.data.map(ev => (
+                <div key={ev.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                  <CircularProgress score={ev.score} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{ev.candidateName}</p>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(ev.label)}`}>
+                        {ev.label}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{ev.jobTitle}</span>
+                      <span>·</span>
+                      <span>by {ev.evaluatedBy}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{ev.score.toFixed(1)}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{formatDateTime(ev.evaluatedAt)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
