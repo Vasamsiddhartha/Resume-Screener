@@ -46,13 +46,16 @@ export async function buildUserFromSupabase(): Promise<User | null> {
   }
 }
 
-/** Create the user's first organization (via SECURITY DEFINER RPC) if they have none. */
+/** Create the user's first organization with plain inserts (no DB function),
+ *  if they don't belong to one yet. Authorized by the policies in
+ *  supabase/migrations/0003_signup_policies.sql. */
 async function ensureOrganization(orgName?: string): Promise<void> {
   if (!supabase || !orgName) return
   const { data: authData } = await supabase.auth.getUser()
   const uid = authData?.user?.id
   if (!uid) return
 
+  // Already a member of an org? Nothing to do.
   const { data: existing } = await supabase
     .from('memberships')
     .select('id')
@@ -60,11 +63,24 @@ async function ensureOrganization(orgName?: string): Promise<void> {
     .limit(1)
   if (existing && existing.length > 0) return
 
-  const { error } = await supabase.rpc('create_organization', {
-    p_name: orgName,
-    p_email: authData?.user?.email ?? null,
-  })
-  if (error) throw error
+  const slug =
+    orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') +
+    '-' +
+    Math.random().toString(36).slice(2, 8)
+
+  // 1) Create the org (created_by defaults to auth.uid())
+  const { data: org, error: orgErr } = await supabase
+    .from('organizations')
+    .insert({ name: orgName.trim(), slug, email: authData?.user?.email ?? null })
+    .select('id')
+    .single()
+  if (orgErr) throw orgErr
+
+  // 2) Add yourself as the org's first admin
+  const { error: memErr } = await supabase
+    .from('memberships')
+    .insert({ user_id: uid, organization_id: org.id, role: 'org_admin' })
+  if (memErr) throw memErr
 }
 
 export const supabaseAuth = {

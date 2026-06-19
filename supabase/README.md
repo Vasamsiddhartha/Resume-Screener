@@ -12,6 +12,7 @@ the data services are switched over (see **Roadmap** below).
 |------|---------|
 | `migrations/0001_schema.sql` | Tables (profiles, organizations, memberships, jobs, candidates, evaluations, notification_preferences) + **Row Level Security** + signup trigger |
 | `migrations/0002_storage.sql` | Private `resumes` bucket + storage RLS (per-org isolation, #7) |
+| `migrations/0003_signup_policies.sql` | Policies so a new user can create their org with plain inserts (no DB function) |
 | `seed.sql` | Optional demo organizations + jobs |
 | `../src/lib/supabase.ts` | Typed Supabase client (null until configured) |
 | `../src/services/storage.service.ts` | Upload / signed-URL / delete resumes |
@@ -23,7 +24,8 @@ the data services are switched over (see **Roadmap** below).
 2. **Run the SQL** — Dashboard → **SQL Editor** → New query, paste and **Run**, in order:
    1. `migrations/0001_schema.sql`
    2. `migrations/0002_storage.sql`
-   3. `seed.sql` *(optional)*
+   3. `migrations/0003_signup_policies.sql`
+   4. `seed.sql` *(optional)*
 3. **Get your keys** — Dashboard → **Settings → API**: copy the **Project URL** and the **anon public** key into `.env`:
    ```env
    VITE_SUPABASE_URL=https://YOURPROJECT.supabase.co
