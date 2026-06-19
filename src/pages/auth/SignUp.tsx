@@ -8,6 +8,7 @@ import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { supabaseAuth, buildUserFromSupabase } from '@/services/supabaseAuth'
+import { mailService } from '@/services/mail.service'
 
 const schema = z.object({
   name: z.string().min(2, 'Enter your full name'),
@@ -32,6 +33,14 @@ export function SignUpPage() {
     setServerError('')
     try {
       const { needsConfirmation } = await supabaseAuth.signUp(data)
+
+      // Send our own welcome email (your mail integration), never blocking signup
+      mailService.send({
+        to: data.email,
+        subject: 'Welcome to ATS Scanner',
+        html: `<p>Hi ${data.name},</p><p>Your ATS Scanner account for <strong>${data.orgName}</strong> is ready. You can start screening resumes right away.</p>`,
+      })
+
       if (needsConfirmation) {
         setConfirmSent(true)
         return
@@ -70,9 +79,9 @@ export function SignUpPage() {
         <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
         </div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Confirm your email</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Almost there</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          We sent a confirmation link to your inbox. Confirm it, then sign in — your organization is set up on first login.
+          Email confirmation is still enabled on your Supabase project. Confirm the link, then sign in — your organization is set up on first login. To skip this, turn off <strong>Confirm email</strong> in Supabase → Authentication → Providers → Email.
         </p>
         <Link to="/login" className="text-sm text-violet-600 dark:text-violet-400 hover:underline">
           Go to login

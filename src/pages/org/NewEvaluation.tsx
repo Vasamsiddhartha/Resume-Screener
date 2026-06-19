@@ -10,6 +10,8 @@ import { candidateService } from '@/services/candidate.service'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getLabelColor } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
+import { useSettingsStore } from '@/store/settings.store'
+import { mailService } from '@/services/mail.service'
 import { cn } from '@/lib/utils'
 import type { ATSResponsePayload } from '@/types'
 
@@ -25,6 +27,7 @@ const STEPS: { key: Step; label: string; num: number }[] = [
 export function NewEvaluationPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
+  const notifications = useSettingsStore(s => s.notifications)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -168,6 +171,16 @@ export function NewEvaluationPage() {
       queryClient.invalidateQueries({ queryKey: ['evaluations'] })
       queryClient.invalidateQueries({ queryKey: ['candidates'] })
       queryClient.invalidateQueries({ queryKey: ['org-dashboard'] })
+
+      // Email notification via your mail integration (respects the user's pref)
+      if (notifications.evaluationCompleted && user?.email && mailService.isEnabled()) {
+        mailService.send({
+          to: user.email,
+          subject: `ATS result: ${name} — ${response.label} (${response.score.toFixed(1)})`,
+          html: `<p><strong>${name}</strong> was evaluated for <strong>${selectedJob.title}</strong>.</p>
+                 <p>Score: <strong>${response.score.toFixed(1)}</strong> · Result: <strong>${response.label}</strong></p>`,
+        })
+      }
 
       setResult(response)
     } catch (err) {
