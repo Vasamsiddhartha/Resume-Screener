@@ -54,7 +54,13 @@ export function SignUpPage() {
         navigate('/login')
       }
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Sign up failed')
+      const raw = err instanceof Error ? err.message : 'Sign up failed'
+      // Friendlier message for the common duplicate-email case
+      if (/already registered|already exists|user_already_exists/i.test(raw)) {
+        setServerError('An account with this email already exists. Try signing in instead.')
+      } else {
+        setServerError(raw)
+      }
     }
   }
 
