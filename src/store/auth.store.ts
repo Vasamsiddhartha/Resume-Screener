@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User } from '@/types'
+import { supabase } from '@/lib/supabase'
 
 interface AuthStore {
   user: User | null
@@ -8,6 +9,7 @@ interface AuthStore {
   isAuthenticated: boolean
   setAuth: (user: User, token: string) => void
   logout: () => void
+  clearAuth: () => void
   updateUser: (user: Partial<User>) => void
   switchOrganization: (organizationId: string) => void
 }
@@ -22,8 +24,16 @@ export const useAuthStore = create<AuthStore>()(
       setAuth: (user, token) =>
         set({ user, token, isAuthenticated: true }),
 
-      logout: () =>
-        set({ user: null, token: null, isAuthenticated: false }),
+      // User-initiated: end the Supabase session (fires SIGNED_OUT, which the
+      // App listener turns into clearAuth) and clear local state.
+      logout: () => {
+        supabase?.auth.signOut()
+        set({ user: null, token: null, isAuthenticated: false })
+      },
+
+      // Clear local auth state only — never calls signOut, so it's safe to call
+      // from the SIGNED_OUT listener / boot without recursing.
+      clearAuth: () => set({ user: null, token: null, isAuthenticated: false }),
 
       updateUser: (updates) =>
         set(state => ({

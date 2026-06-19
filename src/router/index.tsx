@@ -10,6 +10,7 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPassword'
 import { ResetPasswordPage } from '@/pages/auth/ResetPassword'
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmail'
 import { SelectOrganizationPage } from '@/pages/auth/SelectOrganization'
+import { SignUpPage } from '@/pages/auth/SignUp'
 
 import { SuperAdminDashboard } from '@/pages/super-admin/Dashboard'
 import { OrganizationsPage } from '@/pages/super-admin/Organizations'
@@ -38,6 +39,7 @@ export const router = createHashRouter([
     element: <AuthLayout />,
     children: [
       { path: 'login', element: <LoginPage /> },
+      { path: 'signup', element: <SignUpPage /> },
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'verify-email', element: <VerifyEmailPage /> },

@@ -7,6 +7,8 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { authService } from '@/services/auth.service'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { supabaseAuth, buildUserFromSupabase } from '@/services/supabaseAuth'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -34,8 +36,20 @@ export function LoginPage() {
   async function onSubmit(data: FormData) {
     setServerError('')
     try {
-      const { user, token } = await authService.login(data)
-      setAuth(user, token)
+      let user
+      if (isSupabaseConfigured) {
+        // Real Supabase Auth
+        await supabaseAuth.signIn(data.email, data.password)
+        user = await buildUserFromSupabase()
+        if (!user) throw new Error('Could not load your account')
+        setAuth(user, 'supabase')
+      } else {
+        // Mock demo accounts
+        const res = await authService.login(data)
+        user = res.user
+        setAuth(res.user, res.token)
+      }
+
       if (user.role === 'super_admin') {
         navigate('/super-admin/dashboard')
       } else if ((user.memberships?.length ?? 0) > 1) {
@@ -58,25 +72,27 @@ export function LoginPage() {
         </p>
       </div>
 
-      {/* Demo accounts */}
-      <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-        <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2">Demo Accounts</p>
-        <div className="flex flex-wrap gap-1.5">
-          {DEMO_ACCOUNTS.map(acc => (
-            <button
-              key={acc.email}
-              type="button"
-              onClick={() => {
-                setValue('email', acc.email)
-                setValue('password', acc.password)
-              }}
-              className="text-xs px-2.5 py-1 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-            >
-              {acc.label}
-            </button>
-          ))}
+      {/* Demo accounts — only when running on the mock backend */}
+      {!isSupabaseConfigured && (
+        <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2">Demo Accounts</p>
+          <div className="flex flex-wrap gap-1.5">
+            {DEMO_ACCOUNTS.map(acc => (
+              <button
+                key={acc.email}
+                type="button"
+                onClick={() => {
+                  setValue('email', acc.email)
+                  setValue('password', acc.password)
+                }}
+                className="text-xs px-2.5 py-1 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                {acc.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
@@ -122,6 +138,15 @@ export function LoginPage() {
           Sign in
         </Button>
       </form>
+
+      {isSupabaseConfigured && (
+        <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-6">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-violet-600 dark:text-violet-400 hover:underline font-medium">
+            Sign up
+          </Link>
+        </p>
+      )}
     </div>
   )
 }
