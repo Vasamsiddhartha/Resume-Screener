@@ -62,17 +62,26 @@ export const atsService = {
     }
     evaluations = [evaluation, ...evaluations]
 
-    // Persist to Supabase (resume text + score). Never let a Supabase
-    // failure break the evaluation flow — just log it.
+    // Persist to Supabase `evaluations` table (see supabase/migrations/0001_schema.sql).
+    // Guarded + non-fatal: a Supabase failure never breaks the evaluation flow.
+    // Note: real persistence requires org/candidate/job UUIDs from the Supabase
+    // data layer — with the current mock string ids the insert is skipped/caught.
     if (supabase) {
-      const { error } = await supabase.from('resume_evaluations').insert({
+      const { error } = await supabase.from('evaluations').insert({
+        organization_id: orgId,
+        candidate_id: data.candidateId,
+        job_id: data.jobId,
         resume_text: data.resumeText,
         score: data.score,
+        label: data.label,
+        similarity: data.similarity ?? null,
+        decision: data.decision ?? null,
+        evaluated_by: data.evaluatedBy,
       })
       if (error) {
-        console.error('[Supabase] Failed to store evaluation:', error.message)
+        console.warn('[Supabase] Evaluation not stored:', error.message)
       } else {
-        console.log('[Supabase] Evaluation stored (resume_text, score)')
+        console.log('[Supabase] Evaluation stored')
       }
     }
 
