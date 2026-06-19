@@ -2,16 +2,37 @@
 
 export type UserRole = 'super_admin' | 'org_admin' | 'recruiter'
 
+// A user can belong to multiple organizations, each with its own role.
+export interface OrgMembership {
+  organizationId: string
+  organizationName: string
+  role: 'org_admin' | 'recruiter'
+}
+
 export interface User {
   id: string
   email: string
   name: string
   role: UserRole
+  // The ACTIVE organization context (mirrors the selected membership)
   organizationId?: string
   organizationName?: string
+  // All organizations this user belongs to (empty for super_admin)
+  memberships?: OrgMembership[]
   avatar?: string
+  phone?: string
+  jobTitle?: string
   createdAt: string
   isActive: boolean
+}
+
+// User-level notification preferences (#4 — UI now, sending wired later)
+export interface NotificationPreferences {
+  evaluationCompleted: boolean
+  candidateShortlisted: boolean
+  weeklyReport: boolean
+  teamInvites: boolean
+  productUpdates: boolean
 }
 
 export interface AuthState {
@@ -122,6 +143,8 @@ export interface CreateCandidatePayload {
 // The model returns exactly three labels.
 export type ATSLabel = 'Good Fit' | 'Potential Fit' | 'No Fit'
 
+export type EvaluationDecision = 'shortlisted' | 'rejected'
+
 export interface ATSEvaluation {
   id: string
   organizationId: string
@@ -133,6 +156,8 @@ export interface ATSEvaluation {
   resumeText: string
   score: number
   label: ATSLabel
+  similarity?: number
+  decision?: EvaluationDecision
   evaluatedAt: string
   evaluatedBy: string
 }

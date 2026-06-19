@@ -9,6 +9,7 @@ import { LoginPage } from '@/pages/auth/Login'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPassword'
 import { ResetPasswordPage } from '@/pages/auth/ResetPassword'
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmail'
+import { SelectOrganizationPage } from '@/pages/auth/SelectOrganization'
 
 import { SuperAdminDashboard } from '@/pages/super-admin/Dashboard'
 import { OrganizationsPage } from '@/pages/super-admin/Organizations'
@@ -22,6 +23,7 @@ import { JobsPage } from '@/pages/org/Jobs'
 import { CandidatesPage } from '@/pages/org/Candidates'
 import { ATSEvaluationsPage } from '@/pages/org/ATSEvaluations'
 import { NewEvaluationPage } from '@/pages/org/NewEvaluation'
+import { OrgAnalytics } from '@/pages/org/Analytics'
 import { TeamMembersPage } from '@/pages/org/TeamMembers'
 import { OrgSettings } from '@/pages/org/Settings'
 
@@ -39,6 +41,7 @@ export const router = createHashRouter([
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'verify-email', element: <VerifyEmailPage /> },
+      { path: 'select-organization', element: <SelectOrganizationPage /> },
     ],
   },
 
@@ -72,6 +75,7 @@ export const router = createHashRouter([
           { path: 'org/candidates', element: <CandidatesPage /> },
           { path: 'org/evaluations', element: <ATSEvaluationsPage /> },
           { path: 'org/evaluations/new', element: <NewEvaluationPage /> },
+          { path: 'org/analytics', element: <OrgAnalytics /> },
           { path: 'org/team', element: <TeamMembersPage /> },
           { path: 'org/settings', element: <OrgSettings /> },
         ],

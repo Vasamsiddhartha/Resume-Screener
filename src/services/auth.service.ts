@@ -54,4 +54,15 @@ export const authService = {
     await delay(200)
     // In production: invalidate token on server
   },
+
+  async updateProfile(updates: Partial<User>): Promise<User> {
+    await delay(500)
+    // In production: PATCH /me with the updated fields
+    return updates as User
+  },
+
+  async changePassword(_current: string, _next: string): Promise<void> {
+    await delay(600)
+    // In production: verify current password and set new one
+  },
 }

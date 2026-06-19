@@ -1,16 +1,218 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Save, Building2 } from 'lucide-react'
+import { Save, Building2, User, Bell, Palette, Sun, Moon, Monitor, CheckCircle } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, CardHeader, Button, Input, Select, Textarea } from '@/components/ui'
+import { Card, CardHeader, Button, Input, Select, Textarea, Toggle } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
+import { useSettingsStore } from '@/store/settings.store'
+import { useThemeStore } from '@/store/theme.store'
+import { authService } from '@/services/auth.service'
+import { cn } from '@/lib/utils'
+import type { NotificationPreferences } from '@/types'
+
+type Tab = 'profile' | 'notifications' | 'appearance' | 'organization'
+
+const NOTIFICATION_ITEMS: { key: keyof NotificationPreferences; label: string; description: string }[] = [
+  { key: 'evaluationCompleted', label: 'Evaluation completed', description: 'Email me when an ATS evaluation finishes' },
+  { key: 'candidateShortlisted', label: 'Candidate shortlisted', description: 'Email me when a candidate is shortlisted for a job' },
+  { key: 'weeklyReport', label: 'Weekly summary', description: 'A weekly digest of hiring activity' },
+  { key: 'teamInvites', label: 'Team invites', description: 'When someone joins or is invited to your organization' },
+  { key: 'productUpdates', label: 'Product updates', description: 'Occasional news about new features' },
+]
 
 export function OrgSettings() {
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
   const isAdmin = user?.role === 'org_admin'
+  const [tab, setTab] = useState<Tab>('profile')
 
+  const tabs: { key: Tab; label: string; icon: typeof User }[] = [
+    { key: 'profile', label: 'Profile', icon: User },
+    { key: 'notifications', label: 'Notifications', icon: Bell },
+    { key: 'appearance', label: 'Appearance', icon: Palette },
+    { key: 'organization', label: 'Organization', icon: Building2 },
+  ]
+
+  return (
+    <div>
+      <PageHeader title="Settings" description="Manage your account, preferences, and organization" />
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Tab nav */}
+        <nav className="lg:w-52 shrink-0 flex lg:flex-col gap-1 overflow-x-auto">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
+                tab === t.key
+                  ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              )}
+            >
+              <t.icon className="w-4 h-4" />
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex-1 max-w-2xl">
+          {tab === 'profile' && <ProfileTab user={user} updateUser={updateUser} />}
+          {tab === 'notifications' && <NotificationsTab />}
+          {tab === 'appearance' && <AppearanceTab />}
+          {tab === 'organization' && <OrganizationTab isAdmin={isAdmin} orgName={user?.organizationName ?? ''} />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Profile (#2) ───────────────────────────────────────────────────────────
+
+function ProfileTab({ user, updateUser }: { user: ReturnType<typeof useAuthStore.getState>['user']; updateUser: (u: Partial<NonNullable<ReturnType<typeof useAuthStore.getState>['user']>>) => void }) {
+  const [saved, setSaved] = useState(false)
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
+    defaultValues: {
+      name: user?.name ?? '',
+      email: user?.email ?? '',
+      phone: user?.phone ?? '',
+      jobTitle: user?.jobTitle ?? '',
+    },
+  })
+
+  async function onSubmit(data: { name: string; email: string; phone: string; jobTitle: string }) {
+    await authService.updateProfile(data)
+    updateUser(data)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Profile" description="Update your personal information" />
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xl font-bold">
+          {user?.name?.charAt(0) ?? 'U'}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{user?.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+            {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'} · {user?.organizationName}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <Input label="Full Name" {...register('name')} />
+        <Input label="Email" type="email" {...register('email')} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input label="Phone" {...register('phone')} placeholder="+1 555 000 0000" />
+          <Input label="Job Title" {...register('jobTitle')} placeholder="e.g. Technical Recruiter" />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 justify-end mt-6">
+        {saved && (
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <CheckCircle className="w-3.5 h-3.5" /> Saved
+          </span>
+        )}
+        <Button onClick={handleSubmit(onSubmit)} isLoading={isSubmitting} leftIcon={<Save className="w-4 h-4" />}>
+          Save Profile
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
+// ─── Notifications (#4 — UI now, sending wired later) ─────────────────────────
+
+function NotificationsTab() {
+  const { notifications, setNotification } = useSettingsStore()
+
+  return (
+    <Card>
+      <CardHeader title="Email Notifications" description="Choose what we email you about" />
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        {NOTIFICATION_ITEMS.map(item => (
+          <Toggle
+            key={item.key}
+            label={item.label}
+            description={item.description}
+            checked={notifications[item.key]}
+            onChange={v => setNotification(item.key, v)}
+          />
+        ))}
+      </div>
+      <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+        <p className="text-xs text-blue-700 dark:text-blue-400">
+          Preferences are saved on this device. Email delivery is connected through your backend provider.
+        </p>
+      </div>
+    </Card>
+  )
+}
+
+// ─── Appearance (app settings #3) ─────────────────────────────────────────────
+
+function AppearanceTab() {
+  const { theme, setTheme } = useThemeStore()
+  const { density, setDensity } = useSettingsStore()
+
+  const themeOptions = [
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'system', label: 'System', icon: Monitor },
+  ] as const
+
+  return (
+    <Card>
+      <CardHeader title="Appearance" description="Customize how the app looks" />
+
+      <div className="mb-6">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Theme</p>
+        <div className="grid grid-cols-3 gap-3">
+          {themeOptions.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setTheme(opt.value)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
+                theme === opt.value
+                  ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+              )}
+            >
+              <opt.icon className={cn('w-5 h-5', theme === opt.value ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400')} />
+              <span className={cn('text-xs font-medium', theme === opt.value ? 'text-violet-700 dark:text-violet-400' : 'text-slate-600 dark:text-slate-400')}>
+                {opt.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Density</p>
+        <Select
+          options={[
+            { value: 'comfortable', label: 'Comfortable' },
+            { value: 'compact', label: 'Compact' },
+          ]}
+          value={density}
+          onChange={e => setDensity(e.target.value as 'comfortable' | 'compact')}
+        />
+      </div>
+    </Card>
+  )
+}
+
+// ─── Organization (#3 — admin only) ───────────────────────────────────────────
+
+function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: string }) {
   const { register, handleSubmit } = useForm({
     defaultValues: {
-      name: user?.organizationName ?? '',
+      name: orgName,
       email: 'contact@techcorp.com',
       industry: 'technology',
       size: '11-50',
@@ -24,110 +226,70 @@ export function OrgSettings() {
   }
 
   return (
-    <div>
-      <PageHeader title="Organization Settings" description="Manage your organization's profile and preferences" />
-
-      <div className="space-y-5 max-w-2xl">
-        <Card>
-          <CardHeader title="Organization Profile" />
-          <div className="space-y-4">
-            <Input
-              label="Organization Name"
-              {...register('name')}
+    <div className="space-y-5">
+      <Card>
+        <CardHeader title="Organization Profile" />
+        <div className="space-y-4">
+          <Input label="Organization Name" {...register('name')} disabled={!isAdmin} />
+          <Input label="Contact Email" type="email" {...register('email')} disabled={!isAdmin} />
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Industry"
+              options={[
+                { value: 'technology', label: 'Technology' },
+                { value: 'healthcare', label: 'Healthcare' },
+                { value: 'finance', label: 'Finance' },
+                { value: 'retail', label: 'Retail' },
+                { value: 'education', label: 'Education' },
+                { value: 'other', label: 'Other' },
+              ]}
+              {...register('industry')}
               disabled={!isAdmin}
             />
-            <Input
-              label="Contact Email"
-              type="email"
-              {...register('email')}
-              disabled={!isAdmin}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Industry"
-                options={[
-                  { value: 'technology', label: 'Technology' },
-                  { value: 'healthcare', label: 'Healthcare' },
-                  { value: 'finance', label: 'Finance' },
-                  { value: 'retail', label: 'Retail' },
-                  { value: 'education', label: 'Education' },
-                  { value: 'other', label: 'Other' },
-                ]}
-                {...register('industry')}
-                disabled={!isAdmin}
-              />
-              <Select
-                label="Company Size"
-                options={[
-                  { value: '1-10', label: '1–10 employees' },
-                  { value: '11-50', label: '11–50 employees' },
-                  { value: '51-200', label: '51–200 employees' },
-                  { value: '201-1000', label: '201–1000 employees' },
-                  { value: '1000+', label: '1000+ employees' },
-                ]}
-                {...register('size')}
-                disabled={!isAdmin}
-              />
-            </div>
-            <Textarea
-              label="About"
-              placeholder="Brief description of your organization…"
-              rows={3}
-              {...register('about')}
+            <Select
+              label="Company Size"
+              options={[
+                { value: '1-10', label: '1–10 employees' },
+                { value: '11-50', label: '11–50 employees' },
+                { value: '51-200', label: '51–200 employees' },
+                { value: '201-1000', label: '201–1000 employees' },
+                { value: '1000+', label: '1000+ employees' },
+              ]}
+              {...register('size')}
               disabled={!isAdmin}
             />
           </div>
-        </Card>
+          <Textarea label="About" placeholder="Brief description of your organization…" rows={3} {...register('about')} disabled={!isAdmin} />
+        </div>
+      </Card>
 
-        <Card>
-          <CardHeader title="Preferences" />
-          <Select
-            label="Timezone"
-            options={[
-              { value: 'America/New_York', label: 'Eastern Time (ET)' },
-              { value: 'America/Chicago', label: 'Central Time (CT)' },
-              { value: 'America/Denver', label: 'Mountain Time (MT)' },
-              { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
-              { value: 'Europe/London', label: 'London (GMT)' },
-              { value: 'Europe/Paris', label: 'Paris (CET)' },
-            ]}
-            {...register('timezone')}
-            disabled={!isAdmin}
-          />
-        </Card>
-
-        <Card>
-          <CardHeader title="Subscription" description="Your current plan" />
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
-            <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Professional Plan</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">$149/month · renews July 17, 2026</p>
-            </div>
-            <Button variant="outline" size="sm" className="ml-auto">
-              Manage Plan
-            </Button>
+      <Card>
+        <CardHeader title="Subscription" description="Your current plan" />
+        <div className="flex items-center gap-4 p-4 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+          <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
           </div>
-        </Card>
-
-        {!isAdmin && (
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Only organization admins can modify these settings.
-            </p>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Professional Plan</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">$149/month · renews July 17, 2026</p>
           </div>
-        )}
+          <Button variant="outline" size="sm" className="ml-auto">Manage Plan</Button>
+        </div>
+      </Card>
 
-        {isAdmin && (
-          <div className="flex justify-end">
-            <Button onClick={handleSubmit(onSubmit)} leftIcon={<Save className="w-4 h-4" />}>
-              Save Changes
-            </Button>
-          </div>
-        )}
-      </div>
+      {!isAdmin ? (
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Only organization admins can modify organization settings.
+          </p>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button onClick={handleSubmit(onSubmit)} leftIcon={<Save className="w-4 h-4" />}>
+            Save Changes
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, Download, FileSearch } from 'lucide-react'
+import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Mail, Briefcase, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
-import { Card, Button, Input, Select, Spinner } from '@/components/ui'
+import { Card, Button, Input, Select, Spinner, Modal, Badge } from '@/components/ui'
 import { atsService } from '@/services/ats.service'
 import { jobService } from '@/services/job.service'
-import { useQuery } from '@tanstack/react-query'
-import { getLabelColor, formatDateTime, exportToCSV } from '@/lib/utils'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getLabelColor, formatDateTime, exportToCSV, truncateText } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { LABEL_FILTER_OPTIONS, buildJobFilterOptions } from '@/lib/filters'
+import type { ATSEvaluation, EvaluationDecision } from '@/types'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -26,9 +27,11 @@ export function ATSEvaluationsPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [jobFilter, setJobFilter] = useState('all')
   const [labelFilter, setLabelFilter] = useState('all')
+  const [selected, setSelected] = useState<ATSEvaluation | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['evaluations', orgId, search, jobFilter, labelFilter],
@@ -41,6 +44,16 @@ export function ATSEvaluationsPage() {
   })
 
   const jobOptions = buildJobFilterOptions(jobsData?.data ?? [])
+
+  const decisionMutation = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: EvaluationDecision }) =>
+      atsService.setDecision(id, decision),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['evaluations'] })
+      queryClient.invalidateQueries({ queryKey: ['candidates'] })
+      setSelected(updated)
+    },
+  })
 
   // Deep-clone so we never mutate the module-level constant (which is frozen in dev mode)
   const scoreBins = SCORE_BINS.map(b => ({ ...b }))
@@ -147,7 +160,11 @@ export function ATSEvaluationsPage() {
               </div>
             ) : (
               data?.data.map(ev => (
-                <div key={ev.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                <button
+                  key={ev.id}
+                  onClick={() => setSelected(ev)}
+                  className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                >
                   <CircularProgress score={ev.score} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -155,6 +172,8 @@ export function ATSEvaluationsPage() {
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(ev.label)}`}>
                         {ev.label}
                       </span>
+                      {ev.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
+                      {ev.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       <span>{ev.jobTitle}</span>
@@ -166,12 +185,91 @@ export function ATSEvaluationsPage() {
                     <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{ev.score.toFixed(1)}</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">{formatDateTime(ev.evaluatedAt)}</p>
                   </div>
-                </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                </button>
               ))
             )}
           </div>
         )}
       </Card>
+
+      {/* Evaluation detail + shortlist/reject (#5) */}
+      <Modal
+        isOpen={!!selected}
+        onClose={() => setSelected(null)}
+        title="Evaluation"
+        size="lg"
+        footer={
+          selected && (
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button
+                variant={selected.decision === 'shortlisted' ? 'primary' : 'outline'}
+                className="flex-1"
+                leftIcon={<ThumbsUp className="w-4 h-4" />}
+                isLoading={decisionMutation.isPending && decisionMutation.variables?.decision === 'shortlisted'}
+                onClick={() => decisionMutation.mutate({ id: selected.id, decision: 'shortlisted' })}
+              >
+                {selected.decision === 'shortlisted' ? 'Shortlisted' : 'Shortlist'}
+              </Button>
+              <Button
+                variant={selected.decision === 'rejected' ? 'danger' : 'outline'}
+                className="flex-1"
+                leftIcon={<ThumbsDown className="w-4 h-4" />}
+                isLoading={decisionMutation.isPending && decisionMutation.variables?.decision === 'rejected'}
+                onClick={() => decisionMutation.mutate({ id: selected.id, decision: 'rejected' })}
+              >
+                {selected.decision === 'rejected' ? 'Rejected' : 'Reject'}
+              </Button>
+            </div>
+          )
+        }
+      >
+        {selected && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-4">
+              <CircularProgress score={selected.score} label={selected.label} size="md" />
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{selected.candidateName}</p>
+                {selected.candidateEmail && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                    <Mail className="w-3.5 h-3.5" /> {selected.candidateEmail}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(selected.label)}`}>
+                    {selected.label}
+                  </span>
+                  {selected.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
+                  {selected.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <Briefcase className="w-3 h-3" /> Job
+                </p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{selected.jobTitle}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Evaluated</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{formatDateTime(selected.evaluatedAt)}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">by {selected.evaluatedBy}</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Resume excerpt</p>
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto">
+                <p className="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap font-mono leading-relaxed">
+                  {truncateText(selected.resumeText, 600)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

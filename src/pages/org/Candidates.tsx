@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Search, UserPlus, Users, Trash2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,9 +35,11 @@ export function CandidatesPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
   const queryClient = useQueryClient()
+  // Preset filters when navigated from the Jobs page (e.g. "view shortlisted")
+  const navState = (useLocation().state ?? {}) as { jobId?: string; status?: string }
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [jobFilter, setJobFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(navState.status ?? 'all')
+  const [jobFilter, setJobFilter] = useState(navState.jobId ?? 'all')
   const [labelFilter, setLabelFilter] = useState('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null)

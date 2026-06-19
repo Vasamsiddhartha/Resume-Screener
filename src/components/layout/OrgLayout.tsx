@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, Users, FileSearch, UserCog,
-  Settings, Zap, Menu, X, LogOut, User, Plus,
+  Settings, Menu, X, LogOut, User, Plus, BarChart3,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { OrgSwitcher } from '@/components/shared/OrgSwitcher'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/org/jobs', icon: Briefcase, label: 'Jobs' },
   { to: '/org/candidates', icon: Users, label: 'Candidates' },
   { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
+  { to: '/org/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/org/team', icon: UserCog, label: 'Team Members' },
   { to: '/org/settings', icon: Settings, label: 'Settings' },
 ]
@@ -38,17 +40,10 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Logo */}
-        <div className="h-14 flex items-center gap-2.5 px-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm block truncate">
-              {user?.organizationName ?? 'Organization'}
-            </span>
-          </div>
-          <button onClick={onClose} className="lg:hidden p-1 rounded text-slate-400 hover:text-slate-600">
+        {/* Org switcher */}
+        <div className="h-14 flex items-center gap-1.5 px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <OrgSwitcher />
+          <button onClick={onClose} className="lg:hidden p-1 rounded text-slate-400 hover:text-slate-600 shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -89,18 +84,24 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         {/* User */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{user?.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
-              </p>
-            </div>
+            <button
+              onClick={() => { navigate('/org/settings'); onClose() }}
+              className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg -m-1 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Edit profile"
+            >
+              <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{user?.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                  {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
+                </p>
+              </div>
+            </button>
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />

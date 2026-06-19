@@ -1,7 +1,8 @@
-import type { ATSEvaluation, ATSRequestPayload, ATSResponsePayload, PaginatedResponse } from '@/types'
+import type { ATSEvaluation, ATSRequestPayload, ATSResponsePayload, PaginatedResponse, EvaluationDecision } from '@/types'
 import { MOCK_EVALUATIONS } from '@/mock/data'
 import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { candidateService } from '@/services/candidate.service'
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 let evaluations = [...MOCK_EVALUATIONS]
@@ -113,5 +114,25 @@ export const atsService = {
     const ev = evaluations.find(e => e.id === id)
     if (!ev) throw new Error('Evaluation not found')
     return ev
+  },
+
+  // Shortlist or reject a candidate from an evaluation (#5).
+  // Records the decision on the evaluation AND syncs the candidate's status.
+  async setDecision(evalId: string, decision: EvaluationDecision): Promise<ATSEvaluation> {
+    await delay(300)
+    const idx = evaluations.findIndex(e => e.id === evalId)
+    if (idx === -1) throw new Error('Evaluation not found')
+    evaluations[idx] = { ...evaluations[idx], decision }
+
+    // Keep the candidate's status in sync so the tag shows on the job/candidate views
+    try {
+      await candidateService.update(evaluations[idx].candidateId, {
+        status: decision === 'shortlisted' ? 'shortlisted' : 'rejected',
+      })
+    } catch {
+      // Candidate may not exist (legacy/mock evaluation) — non-fatal
+    }
+
+    return evaluations[idx]
   },
 }

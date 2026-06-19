@@ -38,6 +38,9 @@ export function LoginPage() {
       setAuth(user, token)
       if (user.role === 'super_admin') {
         navigate('/super-admin/dashboard')
+      } else if ((user.memberships?.length ?? 0) > 1) {
+        // Multi-org user picks which organization to enter
+        navigate('/select-organization')
       } else {
         navigate('/org/dashboard')
       }

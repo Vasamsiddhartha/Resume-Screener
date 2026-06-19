@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal } from 'lucide-react'
+import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal, Star } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner, Textarea } from '@/components/ui'
 import { jobService } from '@/services/job.service'
+import { candidateService } from '@/services/candidate.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
@@ -41,6 +43,7 @@ export function JobsPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [createOpen, setCreateOpen] = useState(false)
@@ -52,6 +55,16 @@ export function JobsPage() {
     queryKey: ['jobs', orgId, search, statusFilter],
     queryFn: () => jobService.getAll(orgId, { search, status: statusFilter }),
   })
+
+  // Shortlisted candidates per job → shown as a tag on each job (#5)
+  const { data: candidatesData } = useQuery({
+    queryKey: ['candidates', orgId, 'shortlist-counts'],
+    queryFn: () => candidateService.getAll(orgId, { status: 'shortlisted', perPage: 100 }),
+  })
+  const shortlistedByJob = (candidatesData?.data ?? []).reduce<Record<string, number>>((acc, c) => {
+    if (c.appliedJobId) acc[c.appliedJobId] = (acc[c.appliedJobId] ?? 0) + 1
+    return acc
+  }, {})
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -136,6 +149,15 @@ export function JobsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.title}</p>
                       <Badge variant={statusVariant[job.status] ?? 'default'} className="capitalize">{job.status}</Badge>
+                      {shortlistedByJob[job.id] > 0 && (
+                        <button
+                          onClick={() => navigate('/org/candidates', { state: { jobId: job.id, status: 'shortlisted' } })}
+                          className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                          title="View shortlisted candidates"
+                        >
+                          <Star className="w-3 h-3" /> {shortlistedByJob[job.id]} shortlisted
+                        </button>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                       <span>{job.department}</span>
