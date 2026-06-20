@@ -13,6 +13,19 @@ let evaluations = [...MOCK_EVALUATIONS]
 const SCORE_API_URL =
   import.meta.env.VITE_SCORE_API_URL ?? 'https://siddhartha1xl-resume-screening.hf.space/score'
 
+// The model may return labels like "Excellent Match" / "Moderate Match" /
+// "Poor Match", but the app + DB only use three: Good Fit / Potential Fit / No
+// Fit. Normalize by the model's label text, falling back to the score.
+function normalizeLabel(raw: unknown, score: number): import('@/types').ATSLabel {
+  const l = String(raw ?? '').toLowerCase()
+  if (l.includes('excellent') || l.includes('strong') || l.includes('good')) return 'Good Fit'
+  if (l.includes('moderate') || l.includes('fair') || l.includes('average') || l.includes('potential')) return 'Potential Fit'
+  if (l.includes('weak') || l.includes('poor') || l.includes('no')) return 'No Fit'
+  if (score >= 75) return 'Good Fit'
+  if (score >= 50) return 'Potential Fit'
+  return 'No Fit'
+}
+
 export const atsService = {
   async evaluate(payload: ATSRequestPayload): Promise<ATSResponsePayload> {
     // The API expects { resume, job_description } and returns
@@ -40,9 +53,10 @@ export const atsService = {
       throw new Error('Scoring API returned an unexpected response shape')
     }
 
+    const score = Number(item.ats_score ?? item.score)
     const result: ATSResponsePayload = {
-      score: Number(item.ats_score ?? item.score),
-      label: item.label ?? 'No Fit',
+      score,
+      label: normalizeLabel(item.label, score),
       similarity: item.similarity != null ? Number(item.similarity) : undefined,
     }
 

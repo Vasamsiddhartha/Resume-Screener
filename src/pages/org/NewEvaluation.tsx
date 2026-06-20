@@ -40,6 +40,7 @@ export function NewEvaluationPage() {
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [result, setResult] = useState<ATSResponsePayload | null>(null)
   const [evalError, setEvalError] = useState('')
+  const [saveWarning, setSaveWarning] = useState('')
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractError, setExtractError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -130,61 +131,65 @@ export function NewEvaluationPage() {
     if (!selectedJob || !resumeText.trim() || !candidateName.trim()) return
     setIsEvaluating(true)
     setEvalError('')
+    setSaveWarning('')
     setStep('result')
     try {
+      // 1) Scoring — must succeed to show a result
       const response = await atsService.evaluate({
         resume_text: resumeText,
         job_description: selectedJob.description,
       })
+      setResult(response)
 
       const name = candidateName.trim()
       const email = candidateEmail.trim()
 
-      // 1) Create the candidate so they appear on the Candidates page
-      const candidate = await candidateService.create(orgId, {
-        name,
-        email,
-        phone: '',
-        appliedJobId: selectedJob.id,
-        appliedJobTitle: selectedJob.title,
-        latestScore: response.score,
-        latestLabel: response.label,
-        status: 'reviewing',
-        resumeText,
-        organizationName: user?.organizationName,
-      })
-
-      // 2) Save the evaluation linked to that candidate
-      await atsService.saveEvaluation(orgId, {
-        organizationId: orgId,
-        organizationName: user?.organizationName,
-        candidateId: candidate.id,
-        candidateName: name,
-        candidateEmail: email,
-        jobId: selectedJob.id,
-        jobTitle: selectedJob.title,
-        resumeText,
-        score: response.score,
-        label: response.label,
-        evaluatedBy: user?.name ?? 'Recruiter',
-      })
-
-      // Refresh every view that depends on this data
-      queryClient.invalidateQueries({ queryKey: ['evaluations'] })
-      queryClient.invalidateQueries({ queryKey: ['candidates'] })
-      queryClient.invalidateQueries({ queryKey: ['org-dashboard'] })
-
-      // Email notification via your mail integration (respects the user's pref)
-      if (notifications.evaluationCompleted && user?.email && mailService.isEnabled()) {
-        mailService.send({
-          to: user.email,
-          subject: `ATS result: ${name} — ${response.label} (${response.score.toFixed(1)})`,
-          html: `<p><strong>${name}</strong> was evaluated for <strong>${selectedJob.title}</strong>.</p>
-                 <p>Score: <strong>${response.score.toFixed(1)}</strong> · Result: <strong>${response.label}</strong></p>`,
+      // 2) Persistence — best-effort. A DB error shows a warning, NOT a failure,
+      //    so a Supabase issue never hides the score.
+      try {
+        const candidate = await candidateService.create(orgId, {
+          name,
+          email,
+          phone: '',
+          appliedJobId: selectedJob.id,
+          appliedJobTitle: selectedJob.title,
+          latestScore: response.score,
+          latestLabel: response.label,
+          status: 'reviewing',
+          resumeText,
+          organizationName: user?.organizationName,
         })
-      }
 
-      setResult(response)
+        await atsService.saveEvaluation(orgId, {
+          organizationId: orgId,
+          organizationName: user?.organizationName,
+          candidateId: candidate.id,
+          candidateName: name,
+          candidateEmail: email,
+          jobId: selectedJob.id,
+          jobTitle: selectedJob.title,
+          resumeText,
+          score: response.score,
+          label: response.label,
+          evaluatedBy: user?.name ?? 'Recruiter',
+        })
+
+        queryClient.invalidateQueries({ queryKey: ['evaluations'] })
+        queryClient.invalidateQueries({ queryKey: ['candidates'] })
+        queryClient.invalidateQueries({ queryKey: ['org-dashboard'] })
+
+        if (notifications.evaluationCompleted && user?.email && mailService.isEnabled()) {
+          mailService.send({
+            to: user.email,
+            subject: `ATS result: ${name} — ${response.label} (${response.score.toFixed(1)})`,
+            html: `<p><strong>${name}</strong> was evaluated for <strong>${selectedJob.title}</strong>.</p>
+                   <p>Score: <strong>${response.score.toFixed(1)}</strong> · Result: <strong>${response.label}</strong></p>`,
+          })
+        }
+      } catch (saveErr) {
+        console.error('[Save evaluation]', saveErr)
+        setSaveWarning(saveErr instanceof Error ? saveErr.message : 'Could not save to the database')
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Evaluation failed'
       setEvalError(message)
@@ -203,6 +208,7 @@ export function NewEvaluationPage() {
     setCandidateEmail('')
     setResult(null)
     setEvalError('')
+    setSaveWarning('')
     setExtractError('')
   }
 
@@ -469,6 +475,13 @@ export function NewEvaluationPage() {
               </Card>
             ) : result ? (
               <>
+                {saveWarning && (
+                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      <strong>Score shown, but not saved to the database:</strong> {saveWarning}
+                    </p>
+                  </div>
+                )}
                 {/* Score Card */}
                 <Card className="text-center py-8">
                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-wider">

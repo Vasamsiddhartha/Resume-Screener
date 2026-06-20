@@ -12,6 +12,11 @@
 const MAIL_API_URL = import.meta.env.VITE_MAIL_API_URL ?? ''
 const MAIL_FROM = import.meta.env.VITE_MAIL_FROM ?? ''
 
+// EmailJS — works from the browser (CORS-friendly), no backend needed.
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID ?? ''
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID ?? ''
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY ?? ''
+
 const GMAIL_CLIENT_ID = import.meta.env.VITE_GMAIL_CLIENT_ID ?? ''
 const GMAIL_CLIENT_SECRET = import.meta.env.VITE_GMAIL_CLIENT_SECRET ?? ''
 const GMAIL_REFRESH_TOKEN = import.meta.env.VITE_GMAIL_REFRESH_TOKEN ?? ''
@@ -23,7 +28,18 @@ export interface MailMessage {
   html: string
 }
 
+const emailjsReady = Boolean(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY)
 const gmailReady = Boolean(gmailAccessToken || (GMAIL_REFRESH_TOKEN && GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET))
+
+// Gmail OAuth direct from the browser cannot reliably send: Google's token
+// endpoint blocks browser requests (no CORS), so access-token refresh fails.
+if (gmailReady && !MAIL_API_URL && !emailjsReady) {
+  console.warn(
+    '[Mail] Gmail OAuth tokens are set, but Gmail cannot send from the browser ' +
+    '(token refresh is blocked by CORS). Use EmailJS (VITE_EMAILJS_*) or a backend ' +
+    '(VITE_MAIL_API_URL) instead.'
+  )
+}
 
 function toBase64Url(input: string): string {
   const bytes = new TextEncoder().encode(input)
@@ -94,17 +110,39 @@ async function sendViaApi(msg: MailMessage): Promise<void> {
   if (!res.ok) throw new Error(`Mail API failed (${res.status})`)
 }
 
+// EmailJS REST API — sends from the browser. The template (configured in the
+// EmailJS dashboard) should use these variables: to_email, subject, message, from_name.
+async function sendViaEmailJS(msg: MailMessage): Promise<void> {
+  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: EMAILJS_TEMPLATE_ID,
+      user_id: EMAILJS_PUBLIC_KEY,
+      template_params: {
+        to_email: msg.to,
+        subject: msg.subject,
+        message: msg.html,
+        from_name: MAIL_FROM || 'ATS Scanner',
+      },
+    }),
+  })
+  if (!res.ok) throw new Error(`EmailJS failed (${res.status}: ${await res.text().catch(() => '')})`)
+}
+
 export const mailService = {
   isEnabled(): boolean {
-    return Boolean(MAIL_API_URL) || gmailReady
+    return Boolean(MAIL_API_URL) || emailjsReady || gmailReady
   },
 
   /** Send an email. No-op (logged) when nothing is configured or on failure —
-   *  email delivery must never break the app flow. */
+   *  email delivery must never break the app flow. Order: backend → EmailJS → Gmail. */
   async send(msg: MailMessage): Promise<boolean> {
     if (!this.isEnabled()) return false
     try {
       if (MAIL_API_URL) await sendViaApi(msg)
+      else if (emailjsReady) await sendViaEmailJS(msg)
       else await sendViaGmail(msg)
       return true
     } catch (err) {
