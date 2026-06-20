@@ -3,6 +3,7 @@ import { MOCK_EVALUATIONS } from '@/mock/data'
 import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { candidateService } from '@/services/candidate.service'
+import { rowToEvaluation } from './mappers'
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 let evaluations = [...MOCK_EVALUATIONS]
@@ -53,6 +54,26 @@ export const atsService = {
     orgId: string,
     data: Omit<ATSEvaluation, 'id' | 'evaluatedAt'>
   ): Promise<ATSEvaluation> {
+    if (supabase) {
+      const { data: row, error } = await supabase.from('evaluations').insert({
+        organization_id: orgId,
+        organization_name: data.organizationName ?? null,
+        candidate_id: data.candidateId,
+        candidate_name: data.candidateName,
+        candidate_email: data.candidateEmail || null,
+        job_id: data.jobId,
+        job_title: data.jobTitle,
+        resume_text: data.resumeText,
+        score: data.score,
+        label: data.label,
+        similarity: data.similarity ?? null,
+        decision: data.decision ?? null,
+        evaluated_by: data.evaluatedBy,
+      }).select().single()
+      if (error) throw error
+      return rowToEvaluation(row)
+    }
+
     await delay(300)
     const evaluation: ATSEvaluation = {
       id: generateId(),
@@ -61,64 +82,45 @@ export const atsService = {
       evaluatedAt: new Date().toISOString(),
     }
     evaluations = [evaluation, ...evaluations]
-
-    // Persist to Supabase `evaluations` table (see supabase/migrations/0001_schema.sql).
-    // Guarded + non-fatal: a Supabase failure never breaks the evaluation flow.
-    // Note: real persistence requires org/candidate/job UUIDs from the Supabase
-    // data layer — with the current mock string ids the insert is skipped/caught.
-    if (supabase) {
-      const { error } = await supabase.from('evaluations').insert({
-        organization_id: orgId,
-        candidate_id: data.candidateId,
-        job_id: data.jobId,
-        resume_text: data.resumeText,
-        score: data.score,
-        label: data.label,
-        similarity: data.similarity ?? null,
-        decision: data.decision ?? null,
-        evaluated_by: data.evaluatedBy,
-      })
-      if (error) {
-        console.warn('[Supabase] Evaluation not stored:', error.message)
-      } else {
-        console.log('[Supabase] Evaluation stored')
-      }
-    }
-
     return evaluation
   },
 
   async getAll(orgId: string, params?: { page?: number; perPage?: number; search?: string; jobId?: string; label?: string }): Promise<PaginatedResponse<ATSEvaluation>> {
+    if (supabase) {
+      let q = supabase.from('evaluations').select('*').eq('organization_id', orgId).order('created_at', { ascending: false })
+      if (params?.jobId && params.jobId !== 'all') q = q.eq('job_id', params.jobId)
+      if (params?.label && params.label !== 'all') q = q.eq('label', params.label)
+      if (params?.search) q = q.or(`candidate_name.ilike.%${params.search}%,job_title.ilike.%${params.search}%`)
+      const { data, error } = await q
+      if (error) throw error
+      const mapped = (data ?? []).map(rowToEvaluation)
+      const page = params?.page ?? 1
+      const perPage = params?.perPage ?? 100
+      const start = (page - 1) * perPage
+      return { data: mapped.slice(start, start + perPage), total: mapped.length, page, perPage }
+    }
+
     await delay(400)
     let filtered = evaluations.filter(e => e.organizationId === orgId)
-
     if (params?.search) {
       const q = params.search.toLowerCase()
-      filtered = filtered.filter(e =>
-        e.candidateName.toLowerCase().includes(q) || e.jobTitle.toLowerCase().includes(q)
-      )
+      filtered = filtered.filter(e => e.candidateName.toLowerCase().includes(q) || e.jobTitle.toLowerCase().includes(q))
     }
-    if (params?.jobId && params.jobId !== 'all') {
-      filtered = filtered.filter(e => e.jobId === params.jobId)
-    }
-    if (params?.label && params.label !== 'all') {
-      filtered = filtered.filter(e => e.label === params.label)
-    }
-
+    if (params?.jobId && params.jobId !== 'all') filtered = filtered.filter(e => e.jobId === params.jobId)
+    if (params?.label && params.label !== 'all') filtered = filtered.filter(e => e.label === params.label)
     filtered.sort((a, b) => new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime())
-
     const page = params?.page ?? 1
     const perPage = params?.perPage ?? 10
     const start = (page - 1) * perPage
-    return {
-      data: filtered.slice(start, start + perPage),
-      total: filtered.length,
-      page,
-      perPage,
-    }
+    return { data: filtered.slice(start, start + perPage), total: filtered.length, page, perPage }
   },
 
   async getById(id: string): Promise<ATSEvaluation> {
+    if (supabase) {
+      const { data, error } = await supabase.from('evaluations').select('*').eq('id', id).single()
+      if (error) throw error
+      return rowToEvaluation(data)
+    }
     await delay(300)
     const ev = evaluations.find(e => e.id === id)
     if (!ev) throw new Error('Evaluation not found')
@@ -128,20 +130,27 @@ export const atsService = {
   // Shortlist or reject a candidate from an evaluation (#5).
   // Records the decision on the evaluation AND syncs the candidate's status.
   async setDecision(evalId: string, decision: EvaluationDecision): Promise<ATSEvaluation> {
+    if (supabase) {
+      const { data: row, error } = await supabase.from('evaluations').update({ decision }).eq('id', evalId).select().single()
+      if (error) throw error
+      const ev = rowToEvaluation(row)
+      if (ev.candidateId) {
+        try {
+          await candidateService.update(ev.candidateId, { status: decision === 'shortlisted' ? 'shortlisted' : 'rejected' })
+        } catch { /* non-fatal */ }
+      }
+      return ev
+    }
+
     await delay(300)
     const idx = evaluations.findIndex(e => e.id === evalId)
     if (idx === -1) throw new Error('Evaluation not found')
     evaluations[idx] = { ...evaluations[idx], decision }
-
-    // Keep the candidate's status in sync so the tag shows on the job/candidate views
     try {
       await candidateService.update(evaluations[idx].candidateId, {
         status: decision === 'shortlisted' ? 'shortlisted' : 'rejected',
       })
-    } catch {
-      // Candidate may not exist (legacy/mock evaluation) — non-fatal
-    }
-
+    } catch { /* non-fatal */ }
     return evaluations[idx]
   },
 }

@@ -151,11 +151,13 @@ export function NewEvaluationPage() {
         latestLabel: response.label,
         status: 'reviewing',
         resumeText,
+        organizationName: user?.organizationName,
       })
 
       // 2) Save the evaluation linked to that candidate
       await atsService.saveEvaluation(orgId, {
         organizationId: orgId,
+        organizationName: user?.organizationName,
         candidateId: candidate.id,
         candidateName: name,
         candidateEmail: email,

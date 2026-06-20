@@ -90,7 +90,9 @@ export type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'freelance
 export interface Job {
   id: string
   organizationId: string
+  organizationName?: string
   title: string
+  jobType?: string          // freeform, extracted from the JD (e.g. "Full-time, On-site")
   department: string
   location: string
   experienceRequired: string
@@ -102,13 +104,12 @@ export interface Job {
   updatedAt: string
 }
 
+// New style: paste a full JD; title + type are extracted from the text.
 export interface CreateJobPayload {
-  title: string
-  department: string
-  location: string
-  experienceRequired: string
-  employmentType: EmploymentType
   description: string
+  title?: string
+  jobType?: string
+  organizationName?: string
 }
 
 // ─── Candidate ────────────────────────────────────────────────────────────────
@@ -118,6 +119,7 @@ export type CandidateStatus = 'new' | 'reviewing' | 'shortlisted' | 'rejected' |
 export interface Candidate {
   id: string
   organizationId: string
+  organizationName?: string
   name: string
   email: string
   phone: string
@@ -136,6 +138,7 @@ export interface CreateCandidatePayload {
   email: string
   phone: string
   appliedJobId?: string
+  organizationName?: string
 }
 
 // ─── ATS Evaluation ───────────────────────────────────────────────────────────
@@ -148,6 +151,7 @@ export type EvaluationDecision = 'shortlisted' | 'rejected'
 export interface ATSEvaluation {
   id: string
   organizationId: string
+  organizationName?: string
   candidateId: string
   candidateName: string
   candidateEmail: string

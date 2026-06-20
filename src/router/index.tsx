@@ -11,6 +11,7 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPassword'
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmail'
 import { SelectOrganizationPage } from '@/pages/auth/SelectOrganization'
 import { SignUpPage } from '@/pages/auth/SignUp'
+import { AcceptInvitePage } from '@/pages/auth/AcceptInvite'
 
 import { SuperAdminDashboard } from '@/pages/super-admin/Dashboard'
 import { OrganizationsPage } from '@/pages/super-admin/Organizations'
@@ -44,6 +45,7 @@ export const router = createHashRouter([
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'verify-email', element: <VerifyEmailPage /> },
       { path: 'select-organization', element: <SelectOrganizationPage /> },
+      { path: 'accept-invite', element: <AcceptInvitePage /> },
     ],
   },
 

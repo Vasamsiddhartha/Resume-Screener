@@ -36,12 +36,12 @@ export function TeamMembersPage() {
   })
 
   const inviteMutation = useMutation({
-    mutationFn: (payload: FormData) => teamService.invite(orgId, payload),
+    mutationFn: (payload: FormData) => teamService.invite(orgId, { ...payload, organizationName: user?.organizationName }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['team'] }); setInviteOpen(false); reset() },
   })
 
   const removeMutation = useMutation({
-    mutationFn: (id: string) => teamService.remove(id),
+    mutationFn: (member: TeamMember) => teamService.remove(member.id, !member.isActive),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['team'] }); setRemoveTarget(null) },
   })
 
@@ -161,7 +161,7 @@ export function TeamMembersPage() {
       <ConfirmModal
         isOpen={!!removeTarget}
         onClose={() => setRemoveTarget(null)}
-        onConfirm={() => removeTarget && removeMutation.mutate(removeTarget.id)}
+        onConfirm={() => removeTarget && removeMutation.mutate(removeTarget)}
         title="Remove Member"
         description={`Remove ${removeTarget?.name} from your organization? They will lose all access immediately.`}
         isLoading={removeMutation.isPending}

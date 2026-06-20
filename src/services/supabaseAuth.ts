@@ -46,16 +46,18 @@ export async function buildUserFromSupabase(): Promise<User | null> {
   }
 }
 
-/** Create the user's first organization with plain inserts (no DB function),
- *  if they don't belong to one yet. Authorized by the policies in
- *  supabase/migrations/0003_signup_policies.sql. */
-async function ensureOrganization(orgName?: string): Promise<void> {
-  if (!supabase || !orgName) return
+/** Ensure the user belongs to an org. Priority:
+ *  1) accept a pending invitation (join an existing org), else
+ *  2) create a new org from `orgName` (normal signup).
+ *  Plain inserts only — no DB function. */
+async function ensureMembership(orgName?: string): Promise<void> {
+  if (!supabase) return
   const { data: authData } = await supabase.auth.getUser()
   const uid = authData?.user?.id
+  const email = authData?.user?.email
   if (!uid) return
 
-  // Already a member of an org? Nothing to do.
+  // Already a member? Nothing to do.
   const { data: existing } = await supabase
     .from('memberships')
     .select('id')
@@ -63,45 +65,72 @@ async function ensureOrganization(orgName?: string): Promise<void> {
     .limit(1)
   if (existing && existing.length > 0) return
 
-  const slug =
-    orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') +
-    '-' +
-    Math.random().toString(36).slice(2, 8)
+  // 1) Pending invitation for this email → join that org with the invited role
+  if (email) {
+    const { data: invites } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('status', 'pending')
+      .ilike('email', email)
+      .limit(1)
+    const invite = invites?.[0]
+    if (invite) {
+      const { error: memErr } = await supabase.from('memberships').insert({
+        user_id: uid,
+        organization_id: invite.organization_id,
+        organization_name: invite.organization_name,
+        role: invite.role,
+      })
+      if (memErr) throw memErr
+      await supabase.from('invitations').update({ status: 'accepted' }).eq('id', invite.id)
+      return
+    }
+  }
 
-  // 1) Create the org (created_by defaults to auth.uid())
-  const { data: org, error: orgErr } = await supabase
-    .from('organizations')
-    .insert({ name: orgName.trim(), slug, email: authData?.user?.email ?? null })
-    .select('id')
-    .single()
-  if (orgErr) throw orgErr
+  // 2) New signup with an org name → create the org and become its admin
+  if (orgName) {
+    const slug =
+      orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') +
+      '-' +
+      Math.random().toString(36).slice(2, 8)
 
-  // 2) Add yourself as the org's first admin
-  const { error: memErr } = await supabase
-    .from('memberships')
-    .insert({ user_id: uid, organization_id: org.id, role: 'org_admin' })
-  if (memErr) throw memErr
+    const { data: org, error: orgErr } = await supabase
+      .from('organizations')
+      .insert({ name: orgName.trim(), slug, email: email ?? null })
+      .select('id')
+      .single()
+    if (orgErr) throw orgErr
+
+    const { error: memErr } = await supabase.from('memberships').insert({
+      user_id: uid,
+      organization_id: org.id,
+      organization_name: orgName.trim(),
+      role: 'org_admin',
+    })
+    if (memErr) throw memErr
+  }
 }
 
 export const supabaseAuth = {
-  /** Sign up; returns whether email confirmation is required before sign-in. */
-  async signUp(params: { name: string; email: string; password: string; orgName: string }): Promise<{ needsConfirmation: boolean }> {
+  /** Sign up; returns whether email confirmation is required before sign-in.
+   *  Omit orgName when accepting an invitation (membership comes from the invite). */
+  async signUp(params: { name: string; email: string; password: string; orgName?: string }): Promise<{ needsConfirmation: boolean }> {
     if (!supabase) throw new Error('Supabase is not configured')
 
     const { data, error } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
-      options: { data: { name: params.name, org_name: params.orgName } },
+      options: { data: { name: params.name, org_name: params.orgName ?? '' } },
     })
     if (error) throw error
 
     // Session present ⇒ email confirmation is disabled ⇒ finish setup now
     if (data.session && data.user) {
       await supabase.from('profiles').update({ name: params.name }).eq('id', data.user.id)
-      await ensureOrganization(params.orgName)
+      await ensureMembership(params.orgName)
       return { needsConfirmation: false }
     }
-    // Otherwise the user must confirm their email; org is created on first sign-in
+    // Otherwise the user must confirm their email; membership is set on first sign-in
     return { needsConfirmation: true }
   },
 
@@ -110,10 +139,10 @@ export const supabaseAuth = {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
 
-    // Create the org from signup metadata if it wasn't created yet (confirmation flow)
+    // On first sign-in: accept a pending invite, or create the org from signup metadata
     const { data: authData } = await supabase.auth.getUser()
     const orgName = authData?.user?.user_metadata?.org_name as string | undefined
-    await ensureOrganization(orgName)
+    await ensureMembership(orgName || undefined)
   },
 
   async signOut(): Promise<void> {

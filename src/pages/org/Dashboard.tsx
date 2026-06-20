@@ -5,7 +5,6 @@ import { StatCard } from '@/components/shared/StatCard'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardHeader, Button } from '@/components/ui'
 import { CircularProgress } from '@/components/shared/CircularProgress'
-import { MOCK_ORG_ANALYTICS } from '@/mock/data'
 import { getLabelColor } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { atsService } from '@/services/ats.service'
@@ -60,8 +59,21 @@ export function OrgDashboard() {
   evaluations.forEach(e => distMap.set(e.label, (distMap.get(e.label) ?? 0) + 1))
   const scoreDistribution = Array.from(distMap, ([label, count]) => ({ label, count }))
 
-  // Monthly trend stays as historical sample data
-  const evaluationTrend = MOCK_ORG_ANALYTICS.evaluationTrend
+  // Real-time monthly trend computed from actual evaluations (last 6 months)
+  const now = new Date()
+  const evaluationTrend = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    const monthEvals = evaluations.filter(e => {
+      const ed = new Date(e.evaluatedAt)
+      return `${ed.getFullYear()}-${ed.getMonth()}` === key
+    })
+    return {
+      date: d.toLocaleString('en-US', { month: 'short' }),
+      evaluations: monthEvals.length,
+      avgScore: monthEvals.length ? monthEvals.reduce((s, e) => s + e.score, 0) / monthEvals.length : 0,
+    }
+  })
 
   return (
     <div>

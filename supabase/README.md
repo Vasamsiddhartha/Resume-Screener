@@ -25,7 +25,8 @@ the data services are switched over (see **Roadmap** below).
    1. `migrations/0001_schema.sql`
    2. `migrations/0002_storage.sql`
    3. `migrations/0003_signup_policies.sql`
-   4. `seed.sql` *(optional)*
+   4. `migrations/0004_app_data.sql`
+   5. `seed.sql` *(optional)*
 3. **Get your keys** — Dashboard → **Settings → API**: copy the **Project URL** and the **anon public** key into `.env`:
    ```env
    VITE_SUPABASE_URL=https://YOURPROJECT.supabase.co

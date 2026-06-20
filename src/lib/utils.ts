@@ -81,6 +81,19 @@ export function generateId(): string {
   return Math.random().toString(36).slice(2, 11)
 }
 
+// Extract a job title + type from a pasted job description.
+// Looks for "Job Title:" and "Type:" lines; falls back to the first line.
+export function parseJobDescription(text: string): { title: string; jobType: string } {
+  const titleMatch = text.match(/job\s*title\s*[:\-]\s*(.+)/i)
+  const typeMatch = text.match(/(?:^|\n)\s*type\s*[:\-]\s*(.+)/i)
+  const firstLine = text.trim().split('\n')[0]?.trim() ?? ''
+  const title = (titleMatch?.[1] ?? firstLine).trim().replace(/\s+/g, ' ').slice(0, 200)
+  return {
+    title: title || 'Untitled role',
+    jobType: (typeMatch?.[1] ?? '').trim().replace(/\s+/g, ' ').slice(0, 100),
+  }
+}
+
 export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
