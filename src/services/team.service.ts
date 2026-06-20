@@ -61,6 +61,7 @@ export const teamService = {
   async invite(orgId: string, payload: InviteUserPayload & { organizationName?: string }): Promise<TeamMember> {
     if (supabase) {
       const { data: authData } = await supabase.auth.getUser()
+      // Save the invitation row (needed for the accept flow)
       const { data: row, error } = await supabase
         .from('invitations')
         .insert({
@@ -72,16 +73,24 @@ export const teamService = {
         })
         .select()
         .single()
-      if (error) throw error
 
-      // Send the welcome / set-password email via your mail integration
-      await mailService.send({
+      // Send the invite email REGARDLESS of the DB result — same mechanism as the
+      // signup welcome email. (mailService catches its own errors and never throws.)
+      const sent = await mailService.send({
         to: payload.email,
         subject: `You're invited to ${payload.organizationName ?? 'an organization'} on ATS Scanner`,
         html: `<p>You've been invited as <strong>${payload.role === 'org_admin' ? 'Admin' : 'Recruiter'}</strong>.</p>
                <p>Click below to set your password and join:</p>
                <p><a href="${acceptInviteUrl(payload.email)}">Accept invitation &amp; set password</a></p>`,
       })
+
+      // Surface a clear reason if the invitation couldn't be saved
+      if (error) {
+        throw new Error(
+          `${sent ? 'Invite email sent, but' : 'Could not'} save the invitation: ${error.message}. ` +
+          `If this mentions a missing table/column, run supabase/migrations/0004_app_data.sql.`
+        )
+      }
 
       return {
         id: row.id,
