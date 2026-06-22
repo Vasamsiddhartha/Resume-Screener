@@ -6,6 +6,7 @@ export type UserRole = 'super_admin' | 'org_admin' | 'recruiter'
 export interface OrgMembership {
   organizationId: string
   organizationName: string
+  organizationLogo?: string
   role: 'org_admin' | 'recruiter'
 }
 
@@ -17,6 +18,7 @@ export interface User {
   // The ACTIVE organization context (mirrors the selected membership)
   organizationId?: string
   organizationName?: string
+  organizationLogo?: string
   // All organizations this user belongs to (empty for super_admin)
   memberships?: OrgMembership[]
   avatar?: string

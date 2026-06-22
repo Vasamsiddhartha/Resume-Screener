@@ -51,6 +51,7 @@ export const useAuthStore = create<AuthStore>()(
               ...state.user,
               organizationId: m.organizationId,
               organizationName: m.organizationName,
+              organizationLogo: m.organizationLogo,
               role: m.role,
             },
           }

@@ -46,6 +46,20 @@ export const storageService = {
     if (error) throw error
   },
 
+  /** Upload an organization logo to the public `logos` bucket; returns its public URL. */
+  async uploadLogo(organizationId: string, file: File): Promise<string> {
+    if (!supabase) throw new Error('Supabase is not configured')
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+    const path = `${organizationId}/logo-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('logos').upload(path, file, {
+      upsert: true,
+      contentType: file.type || undefined,
+    })
+    if (error) throw error
+    const { data } = supabase.storage.from('logos').getPublicUrl(path)
+    return data.publicUrl
+  },
+
   /** List the resume files stored for an organization. */
   async listOrgResumes(organizationId: string): Promise<string[]> {
     if (!supabase) return []

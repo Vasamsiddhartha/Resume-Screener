@@ -3,6 +3,7 @@ import { MOCK_TEAM_MEMBERS } from '@/mock/data'
 import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { mailService } from '@/services/mail.service'
+import { inviteEmail } from '@/lib/emailTemplates'
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 let members = [...MOCK_TEAM_MEMBERS]
@@ -58,7 +59,7 @@ export const teamService = {
     return members.filter(m => m.organizationId === orgId)
   },
 
-  async invite(orgId: string, payload: InviteUserPayload & { organizationName?: string }): Promise<TeamMember> {
+  async invite(orgId: string, payload: InviteUserPayload & { organizationName?: string; organizationLogo?: string }): Promise<TeamMember> {
     if (supabase) {
       const { data: authData } = await supabase.auth.getUser()
       // Save the invitation row (needed for the accept flow)
@@ -78,10 +79,12 @@ export const teamService = {
       // signup welcome email. (mailService catches its own errors and never throws.)
       const sent = await mailService.send({
         to: payload.email,
-        subject: `You're invited to ${payload.organizationName ?? 'an organization'} on ATS Scanner`,
-        html: `<p>You've been invited as <strong>${payload.role === 'org_admin' ? 'Admin' : 'Recruiter'}</strong>.</p>
-               <p>Click below to set your password and join:</p>
-               <p><a href="${acceptInviteUrl(payload.email)}">Accept invitation &amp; set password</a></p>`,
+        ...inviteEmail({
+          orgName: payload.organizationName ?? 'an organization',
+          role: payload.role,
+          acceptUrl: acceptInviteUrl(payload.email),
+          logoUrl: payload.organizationLogo,
+        }),
       })
 
       // Surface a clear reason if the invitation couldn't be saved

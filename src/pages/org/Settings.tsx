@@ -285,6 +285,9 @@ function ModelTab() {
 // ─── Organization (#3 — admin only) ───────────────────────────────────────────
 
 function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: string }) {
+  const { user, updateUser } = useAuthStore()
+  const [logo, setLogo] = useState(user?.organizationLogo)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const { register, handleSubmit } = useForm({
     defaultValues: {
       name: orgName,
@@ -300,8 +303,63 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
     console.log('Org settings saved', data)
   }
 
+  async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !user?.organizationId) return
+    setUploadingLogo(true)
+    try {
+      let url: string
+      const { isSupabaseConfigured, supabase } = await import('@/lib/supabase')
+      if (isSupabaseConfigured && supabase) {
+        const { storageService } = await import('@/services/storage.service')
+        url = await storageService.uploadLogo(user.organizationId, file)
+        await supabase.from('organizations').update({ logo_url: url }).eq('id', user.organizationId)
+      } else {
+        // Mock mode — keep a local data URL
+        url = await new Promise<string>(res => {
+          const r = new FileReader()
+          r.onload = () => res(r.result as string)
+          r.readAsDataURL(file)
+        })
+      }
+      // Reflect immediately (active org + the matching membership)
+      const memberships = (user.memberships ?? []).map(m =>
+        m.organizationId === user.organizationId ? { ...m, organizationLogo: url } : m
+      )
+      updateUser({ organizationLogo: url, memberships })
+      setLogo(url)
+      notify('org', 'Logo updated', 'Your organization logo was changed')
+    } catch (err) {
+      console.warn('[Logo] upload failed:', err)
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
+      <Card>
+        <CardHeader title="Organization Logo" description="Shown across the app and on emails" />
+        <div className="flex items-center gap-4">
+          {logo ? (
+            <img src={logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 bg-white" />
+          ) : (
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-2xl font-bold">
+              {orgName.charAt(0)}
+            </div>
+          )}
+          {isAdmin && (
+            <label className="cursor-pointer">
+              <span className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+                {uploadingLogo ? 'Uploading…' : 'Upload logo'}
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={onLogoFile} disabled={uploadingLogo} />
+            </label>
+          )}
+        </div>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">Any image format (PNG, JPG, SVG, WebP…). Square works best.</p>
+      </Card>
+
       <Card>
         <CardHeader title="Organization Profile" />
         <div className="space-y-4">

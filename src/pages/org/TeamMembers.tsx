@@ -46,7 +46,7 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
   })
 
   const inviteMutation = useMutation({
-    mutationFn: (payload: FormData) => teamService.invite(orgId, { ...payload, organizationName: user?.organizationName }),
+    mutationFn: (payload: FormData) => teamService.invite(orgId, { ...payload, organizationName: user?.organizationName, organizationLogo: user?.organizationLogo }),
     onSuccess: (m) => { notify('team', 'Member invited', `${m.email} as ${m.role === 'org_admin' ? 'Admin' : 'Recruiter'}`); queryClient.invalidateQueries({ queryKey: ['team'] }); setInviteOpen(false); reset() },
   })
 

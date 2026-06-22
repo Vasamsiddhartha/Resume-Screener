@@ -12,6 +12,7 @@ import { getLabelColor } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { useSettingsStore } from '@/store/settings.store'
 import { mailService } from '@/services/mail.service'
+import { evaluationEmail } from '@/lib/emailTemplates'
 import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
 import type { ATSResponsePayload } from '@/types'
@@ -199,9 +200,15 @@ export function NewEvaluationPage() {
         if (notifications.evaluationCompleted && user?.email && mailService.isEnabled()) {
           mailService.send({
             to: user.email,
-            subject: `ATS result: ${name} — ${response.label} (${response.score.toFixed(1)})`,
-            html: `<p><strong>${name}</strong> was evaluated for <strong>${selectedJob.title}</strong>.</p>
-                   <p>Score: <strong>${response.score.toFixed(1)}</strong> · Result: <strong>${response.label}</strong></p>`,
+            ...evaluationEmail({
+              candidateName: name,
+              jobTitle: selectedJob.title,
+              score: response.score,
+              label: response.label,
+              orgName: user?.organizationName ?? 'ATS Scanner',
+              logoUrl: user?.organizationLogo,
+              appUrl: `${window.location.origin}${window.location.pathname}#/org/evaluations`,
+            }),
           })
         }
       } catch (saveErr) {

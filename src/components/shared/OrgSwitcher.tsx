@@ -9,6 +9,18 @@ import { supabaseAuth, buildUserFromSupabase } from '@/services/supabaseAuth'
 import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
 
+function OrgAvatar({ name, logo, size = 7 }: { name: string; logo?: string; size?: 6 | 7 }) {
+  const dim = size === 7 ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-[10px]'
+  if (logo) {
+    return <img src={logo} alt={name} className={`${dim} rounded-lg object-cover shrink-0 bg-white`} />
+  }
+  return (
+    <div className={`${dim} rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white font-bold shrink-0`}>
+      {name.charAt(0)}
+    </div>
+  )
+}
+
 export function OrgSwitcher() {
   const { user, switchOrganization, setAuth, updateUser } = useAuthStore()
   const navigate = useNavigate()
@@ -84,9 +96,7 @@ export function OrgSwitcher() {
           onClick={() => setOpen(o => !o)}
           className="w-full flex items-center gap-2 px-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-w-0"
         >
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-            {activeName.charAt(0)}
-          </div>
+          <OrgAvatar name={activeName} logo={user?.organizationLogo} />
           <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate flex-1 text-left">{activeName}</span>
           <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
         </button>
@@ -107,9 +117,7 @@ export function OrgSwitcher() {
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
-                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                  {m.organizationName.charAt(0)}
-                </div>
+                <OrgAvatar name={m.organizationName} logo={m.organizationLogo} size={6} />
                 <div className="flex-1 min-w-0 text-left">
                   <p className="truncate font-medium">{m.organizationName}</p>
                   <p className="text-[10px] text-slate-400 dark:text-slate-500">

@@ -17,7 +17,7 @@ export async function buildUserFromSupabase(): Promise<User | null> {
     supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle(),
     supabase
       .from('memberships')
-      .select('role, organization_id, organizations(name)')
+      .select('role, organization_id, organizations(name, logo_url)')
       .eq('user_id', authUser.id),
   ])
 
@@ -25,6 +25,7 @@ export async function buildUserFromSupabase(): Promise<User | null> {
     organizationId: m.organization_id as string,
     organizationName:
       ((m.organizations as { name?: string } | null)?.name) ?? 'Organization',
+    organizationLogo: (m.organizations as { logo_url?: string } | null)?.logo_url ?? undefined,
     role: m.role as OrgMembership['role'],
   }))
 
@@ -38,6 +39,7 @@ export async function buildUserFromSupabase(): Promise<User | null> {
     role: isSuper ? 'super_admin' : (active?.role ?? 'recruiter'),
     organizationId: active?.organizationId,
     organizationName: active?.organizationName,
+    organizationLogo: active?.organizationLogo,
     memberships,
     phone: (profile as { phone?: string } | null)?.phone ?? undefined,
     jobTitle: (profile as { job_title?: string } | null)?.job_title ?? undefined,

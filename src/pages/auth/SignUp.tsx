@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { supabaseAuth, buildUserFromSupabase } from '@/services/supabaseAuth'
 import { mailService } from '@/services/mail.service'
+import { welcomeEmail } from '@/lib/emailTemplates'
 
 const schema = z.object({
   name: z.string().min(2, 'Enter your full name'),
@@ -37,8 +38,11 @@ export function SignUpPage() {
       // Send our own welcome email (your mail integration), never blocking signup
       mailService.send({
         to: data.email,
-        subject: 'Welcome to ATS Scanner',
-        html: `<p>Hi ${data.name},</p><p>Your ATS Scanner account for <strong>${data.orgName}</strong> is ready. You can start screening resumes right away.</p>`,
+        ...welcomeEmail({
+          name: data.name,
+          orgName: data.orgName,
+          appUrl: `${window.location.origin}${window.location.pathname}#/login`,
+        }),
       })
 
       if (needsConfirmation) {
