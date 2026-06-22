@@ -27,6 +27,7 @@ import { ATSEvaluationsPage } from '@/pages/org/ATSEvaluations'
 import { NewEvaluationPage } from '@/pages/org/NewEvaluation'
 import { OrgAnalytics } from '@/pages/org/Analytics'
 import { PipelinePage } from '@/pages/org/Pipeline'
+import { NotificationsPage } from '@/pages/NotificationsPage'
 import { TeamMembersPage } from '@/pages/org/TeamMembers'
 import { OrgSettings } from '@/pages/org/Settings'
 
@@ -63,6 +64,7 @@ export const router = createHashRouter([
           { path: 'super-admin/analytics', element: <AnalyticsPage /> },
           { path: 'super-admin/plans', element: <SubscriptionPlansPage /> },
           { path: 'super-admin/settings', element: <SuperAdminSettings /> },
+          { path: 'super-admin/notifications', element: <NotificationsPage /> },
         ],
       },
     ],
@@ -83,6 +85,7 @@ export const router = createHashRouter([
           { path: 'org/evaluations/new', element: <NewEvaluationPage /> },
           { path: 'org/analytics', element: <OrgAnalytics /> },
           { path: 'org/team', element: <TeamMembersPage /> },
+          { path: 'org/notifications', element: <NotificationsPage /> },
           { path: 'org/settings', element: <OrgSettings /> },
         ],
       },

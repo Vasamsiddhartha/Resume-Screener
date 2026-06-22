@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Check, FileSearch, Users, Briefcase, UserCog, Settings, Building2, Info } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Bell, Check, FileSearch, Users, Briefcase, UserCog, Settings, Building2, Info, ArrowRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useNotificationsStore, type NotificationType } from '@/store/notifications.store'
+import { useAuthStore } from '@/store/auth.store'
 import { formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -17,9 +19,17 @@ const ICONS: Record<NotificationType, LucideIcon> = {
 
 export function NotificationBell() {
   const { items, markRead, markAllRead, clear } = useNotificationsStore()
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const unread = items.filter(i => !i.read).length
+  const allPath = user?.role === 'super_admin' ? '/super-admin/notifications' : '/org/notifications'
+
+  function viewAll() {
+    setOpen(false)
+    navigate(allPath)
+  }
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -65,7 +75,7 @@ export function NotificationBell() {
                 return (
                   <button
                     key={n.id}
-                    onClick={() => markRead(n.id)}
+                    onClick={() => { markRead(n.id); viewAll() }}
                     className={cn(
                       'w-full text-left flex items-start gap-3 px-4 py-3 border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors',
                       !n.read && 'bg-violet-50/40 dark:bg-violet-900/10'
@@ -88,14 +98,22 @@ export function NotificationBell() {
             )}
           </div>
 
-          {items.length > 0 && unread > 0 && (
+          <div className="flex items-center border-t border-slate-100 dark:border-slate-800">
+            {unread > 0 && (
+              <button
+                onClick={markAllRead}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                <Check className="w-3.5 h-3.5" /> Mark all read
+              </button>
+            )}
             <button
-              onClick={markAllRead}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800"
+              onClick={viewAll}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              <Check className="w-3.5 h-3.5" /> Mark all as read
+              View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
-          )}
+          </div>
         </div>
       )}
     </div>

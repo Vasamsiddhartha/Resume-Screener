@@ -82,9 +82,18 @@ function ProfileTab({ user, updateUser }: { user: ReturnType<typeof useAuthStore
   })
 
   async function onSubmit(data: { name: string; email: string; phone: string; jobTitle: string }) {
+    // Build a detailed list of what actually changed
+    const changes: string[] = []
+    if (data.name !== (user?.name ?? '')) changes.push(`Name changed to ${data.name}`)
+    if (data.email !== (user?.email ?? '')) changes.push(`Email changed to ${data.email}`)
+    if (data.phone !== (user?.phone ?? '')) changes.push(`Phone number changed to ${data.phone || '(removed)'}`)
+    if (data.jobTitle !== (user?.jobTitle ?? '')) changes.push(`Job title changed to ${data.jobTitle || '(removed)'}`)
+
     await authService.updateProfile(data)
     updateUser(data)
-    notify('settings', 'Profile updated', 'Your profile changes were saved')
+    if (changes.length) {
+      notify('settings', 'Profile updated', changes.join('\n'))
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -142,7 +151,7 @@ function NotificationsTab() {
             label={item.label}
             description={item.description}
             checked={notifications[item.key]}
-            onChange={v => setNotification(item.key, v)}
+            onChange={v => { setNotification(item.key, v); notify('settings', 'Notification preference updated', `${item.label} ${v ? 'enabled' : 'disabled'}`) }}
           />
         ))}
       </div>
@@ -177,7 +186,7 @@ function AppearanceTab() {
           {themeOptions.map(opt => (
             <button
               key={opt.value}
-              onClick={() => setTheme(opt.value)}
+              onClick={() => { setTheme(opt.value); notify('settings', 'Appearance updated', `Theme set to ${opt.label}`) }}
               className={cn(
                 'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
                 theme === opt.value
