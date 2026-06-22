@@ -12,6 +12,7 @@ import { getLabelColor } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { useSettingsStore } from '@/store/settings.store'
 import { mailService } from '@/services/mail.service'
+import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
 import type { ATSResponsePayload } from '@/types'
 
@@ -177,6 +178,8 @@ export function NewEvaluationPage() {
         queryClient.invalidateQueries({ queryKey: ['evaluations'] })
         queryClient.invalidateQueries({ queryKey: ['candidates'] })
         queryClient.invalidateQueries({ queryKey: ['org-dashboard'] })
+
+        notify('evaluation', 'Evaluation completed', `${name} — ${response.label} (${response.score.toFixed(1)})`)
 
         if (notifications.evaluationCompleted && user?.email && mailService.isEnabled()) {
           mailService.send({

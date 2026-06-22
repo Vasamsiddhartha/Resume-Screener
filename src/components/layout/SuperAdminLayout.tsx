@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -115,6 +116,8 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <Menu className="w-5 h-5" />
       </button>
       <div className="flex-1" />
+      <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Super Admin</span>
+      <NotificationBell />
       <ThemeToggle />
     </header>
   )

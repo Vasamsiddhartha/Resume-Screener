@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Mail, Briefcase, ChevronRight } from 'lucide-react'
+import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Trophy, Mail, Briefcase, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { Card, Button, Input, Select, Spinner, Modal, Badge } from '@/components/ui'
@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getLabelColor, formatDateTime, exportToCSV, truncateText } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { LABEL_FILTER_OPTIONS, buildJobFilterOptions } from '@/lib/filters'
+import { notify } from '@/store/notifications.store'
 import type { ATSEvaluation, EvaluationDecision } from '@/types'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -48,7 +49,8 @@ export function ATSEvaluationsPage() {
   const decisionMutation = useMutation({
     mutationFn: ({ id, decision }: { id: string; decision: EvaluationDecision }) =>
       atsService.setDecision(id, decision),
-    onSuccess: (updated) => {
+    onSuccess: (updated, vars) => {
+      notify('candidate', `Candidate ${vars.decision}`, `${updated.candidateName} — ${updated.jobTitle}`)
       queryClient.invalidateQueries({ queryKey: ['evaluations'] })
       queryClient.invalidateQueries({ queryKey: ['candidates'] })
       setSelected(updated)
@@ -173,6 +175,7 @@ export function ATSEvaluationsPage() {
                         {ev.label}
                       </span>
                       {ev.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
+                      {ev.decision === 'hired' && <Badge variant="purple">Hired</Badge>}
                       {ev.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -212,6 +215,15 @@ export function ATSEvaluationsPage() {
                 {selected.decision === 'shortlisted' ? 'Shortlisted' : 'Shortlist'}
               </Button>
               <Button
+                variant={selected.decision === 'hired' ? 'primary' : 'outline'}
+                className="flex-1"
+                leftIcon={<Trophy className="w-4 h-4" />}
+                isLoading={decisionMutation.isPending && decisionMutation.variables?.decision === 'hired'}
+                onClick={() => decisionMutation.mutate({ id: selected.id, decision: 'hired' })}
+              >
+                {selected.decision === 'hired' ? 'Hired' : 'Hire'}
+              </Button>
+              <Button
                 variant={selected.decision === 'rejected' ? 'danger' : 'outline'}
                 className="flex-1"
                 leftIcon={<ThumbsDown className="w-4 h-4" />}
@@ -240,6 +252,7 @@ export function ATSEvaluationsPage() {
                     {selected.label}
                   </span>
                   {selected.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
+                  {selected.decision === 'hired' && <Badge variant="purple">Hired</Badge>}
                   {selected.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
                 </div>
               </div>

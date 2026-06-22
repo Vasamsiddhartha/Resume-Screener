@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal, Star } from 'lucide-react'
+import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal, Star, Trophy, CheckCircle } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner, Textarea } from '@/components/ui'
 import { jobService } from '@/services/job.service'
@@ -11,6 +11,7 @@ import { candidateService } from '@/services/candidate.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDate, parseJobDescription } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
+import { notify } from '@/store/notifications.store'
 import type { Job } from '@/types'
 
 const schema = z.object({
@@ -43,15 +44,19 @@ export function JobsPage() {
     queryFn: () => jobService.getAll(orgId, { search, status: statusFilter }),
   })
 
-  // Shortlisted candidates per job → shown as a tag on each job (#5)
+  // Shortlisted + hired candidates per job → shown as tags on each job
   const { data: candidatesData } = useQuery({
-    queryKey: ['candidates', orgId, 'shortlist-counts'],
-    queryFn: () => candidateService.getAll(orgId, { status: 'shortlisted', perPage: 100 }),
+    queryKey: ['candidates', orgId, 'job-counts'],
+    queryFn: () => candidateService.getAll(orgId, { perPage: 200 }),
   })
-  const shortlistedByJob = (candidatesData?.data ?? []).reduce<Record<string, number>>((acc, c) => {
-    if (c.appliedJobId) acc[c.appliedJobId] = (acc[c.appliedJobId] ?? 0) + 1
-    return acc
-  }, {})
+  const allCandidates = candidatesData?.data ?? []
+  const countByJob = (status: string) =>
+    allCandidates.reduce<Record<string, number>>((acc, c) => {
+      if (c.appliedJobId && c.status === status) acc[c.appliedJobId] = (acc[c.appliedJobId] ?? 0) + 1
+      return acc
+    }, {})
+  const shortlistedByJob = countByJob('shortlisted')
+  const hiredByJob = countByJob('hired')
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -68,7 +73,7 @@ export function JobsPage() {
         organizationName: user?.organizationName,
       })
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['jobs'] }); setCreateOpen(false); reset() },
+    onSuccess: (job) => { notify('job', 'Job created', job.title); queryClient.invalidateQueries({ queryKey: ['jobs'] }); setCreateOpen(false); reset() },
   })
 
   const updateMutation = useMutation({
@@ -81,7 +86,12 @@ export function JobsPage() {
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => jobService.archive(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['jobs'] }),
+    onSuccess: (job) => { notify('job', 'Job archived', job.title); queryClient.invalidateQueries({ queryKey: ['jobs'] }) },
+  })
+
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => jobService.update(id, { status: 'active' }),
+    onSuccess: (job) => { notify('job', 'Job activated', job.title); queryClient.invalidateQueries({ queryKey: ['jobs'] }) },
   })
 
   const deleteMutation = useMutation({
@@ -151,6 +161,15 @@ export function JobsPage() {
                           <Star className="w-3 h-3" /> {shortlistedByJob[job.id]} shortlisted
                         </button>
                       )}
+                      {hiredByJob[job.id] > 0 && (
+                        <button
+                          onClick={() => navigate('/org/candidates', { state: { jobId: job.id, status: 'hired' } })}
+                          className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+                          title="View hired candidates"
+                        >
+                          <Trophy className="w-3 h-3" /> {hiredByJob[job.id]} hired
+                        </button>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                       {job.jobType && (
@@ -182,10 +201,15 @@ export function JobsPage() {
                         <button onClick={() => openEdit(job)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
                           <Pencil className="w-4 h-4" /> Edit
                         </button>
-                        {job.status !== 'archived' && (
+                        {job.status !== 'archived' ? (
                           <button onClick={() => { archiveMutation.mutate(job.id); setActionMenu(null) }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20">
                             <Archive className="w-4 h-4" /> Archive
+                          </button>
+                        ) : (
+                          <button onClick={() => { activateMutation.mutate(job.id); setActionMenu(null) }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                            <CheckCircle className="w-4 h-4" /> Activate
                           </button>
                         )}
                         <button onClick={() => { setDeleteTarget(job); setActionMenu(null) }}

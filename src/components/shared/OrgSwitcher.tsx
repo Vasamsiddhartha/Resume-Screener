@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Modal, Input, Button } from '@/components/ui'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { supabaseAuth, buildUserFromSupabase } from '@/services/supabaseAuth'
+import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
 
 export function OrgSwitcher() {
@@ -63,6 +64,7 @@ export function OrgSwitcher() {
           role: 'org_admin',
         })
       }
+      notify('org', 'Organization created', newName.trim())
       queryClient.invalidateQueries()
       setCreateOpen(false)
       setNewName('')

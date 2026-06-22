@@ -144,14 +144,13 @@ export const atsService = {
   // Shortlist or reject a candidate from an evaluation (#5).
   // Records the decision on the evaluation AND syncs the candidate's status.
   async setDecision(evalId: string, decision: EvaluationDecision): Promise<ATSEvaluation> {
+    // decision maps 1:1 to candidate status (shortlisted / rejected / hired)
     if (supabase) {
       const { data: row, error } = await supabase.from('evaluations').update({ decision }).eq('id', evalId).select().single()
       if (error) throw error
       const ev = rowToEvaluation(row)
       if (ev.candidateId) {
-        try {
-          await candidateService.update(ev.candidateId, { status: decision === 'shortlisted' ? 'shortlisted' : 'rejected' })
-        } catch { /* non-fatal */ }
+        try { await candidateService.update(ev.candidateId, { status: decision }) } catch { /* non-fatal */ }
       }
       return ev
     }
@@ -161,9 +160,7 @@ export const atsService = {
     if (idx === -1) throw new Error('Evaluation not found')
     evaluations[idx] = { ...evaluations[idx], decision }
     try {
-      await candidateService.update(evaluations[idx].candidateId, {
-        status: decision === 'shortlisted' ? 'shortlisted' : 'rejected',
-      })
+      await candidateService.update(evaluations[idx].candidateId, { status: decision })
     } catch { /* non-fatal */ }
     return evaluations[idx]
   },

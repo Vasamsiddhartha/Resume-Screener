@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { UserPlus, Trash2, Shield, User, CheckCircle, Clock } from 'lucide-react'
+import { UserPlus, Trash2, Shield, User, CheckCircle, Clock, Link2, Check } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -9,6 +9,7 @@ import { teamService } from '@/services/team.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
+import { notify } from '@/store/notifications.store'
 import type { TeamMember } from '@/types'
 
 const schema = z.object({
@@ -24,6 +25,15 @@ export function TeamMembersPage() {
   const queryClient = useQueryClient()
   const [inviteOpen, setInviteOpen] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
+  const [copiedEmail, setCopiedEmail] = useState('')
+
+  function copyInviteLink(email: string) {
+    const url = `${window.location.origin}${window.location.pathname}#/accept-invite?email=${encodeURIComponent(email)}`
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedEmail(email)
+      setTimeout(() => setCopiedEmail(''), 2000)
+    })
+  }
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['team', orgId],
@@ -37,7 +47,7 @@ export function TeamMembersPage() {
 
   const inviteMutation = useMutation({
     mutationFn: (payload: FormData) => teamService.invite(orgId, { ...payload, organizationName: user?.organizationName }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['team'] }); setInviteOpen(false); reset() },
+    onSuccess: (m) => { notify('team', 'Member invited', `${m.email} as ${m.role === 'org_admin' ? 'Admin' : 'Recruiter'}`); queryClient.invalidateQueries({ queryKey: ['team'] }); setInviteOpen(false); reset() },
   })
 
   const removeMutation = useMutation({
@@ -99,6 +109,16 @@ export function TeamMembersPage() {
                   )}
                 </div>
 
+                {isAdmin && !member.isActive && (
+                  <button
+                    onClick={() => copyInviteLink(member.email)}
+                    className="text-xs font-medium px-2 py-1 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors shrink-0 flex items-center gap-1"
+                    title="Copy the set-password link to share with the invitee"
+                  >
+                    {copiedEmail === member.email ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
+                    {copiedEmail === member.email ? 'Copied' : 'Copy link'}
+                  </button>
+                )}
                 {isAdmin && member.id !== user?.id && (
                   <button
                     onClick={() => setRemoveTarget(member)}

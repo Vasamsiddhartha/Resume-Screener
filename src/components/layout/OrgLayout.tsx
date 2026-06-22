@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from '@/store/auth.store'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { OrgSwitcher } from '@/components/shared/OrgSwitcher'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -129,6 +130,7 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
       <span className="text-xs text-slate-500 dark:text-slate-400 capitalize hidden sm:block">
         {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
       </span>
+      <NotificationBell />
       <ThemeToggle />
     </header>
   )

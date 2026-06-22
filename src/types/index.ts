@@ -146,7 +146,7 @@ export interface CreateCandidatePayload {
 // The model returns exactly three labels.
 export type ATSLabel = 'Good Fit' | 'Potential Fit' | 'No Fit'
 
-export type EvaluationDecision = 'shortlisted' | 'rejected'
+export type EvaluationDecision = 'shortlisted' | 'rejected' | 'hired'
 
 export interface ATSEvaluation {
   id: string

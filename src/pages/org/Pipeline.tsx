@@ -8,6 +8,7 @@ import { candidateService } from '@/services/candidate.service'
 import { jobService } from '@/services/job.service'
 import { atsService } from '@/services/ats.service'
 import { useAuthStore } from '@/store/auth.store'
+import { notify } from '@/store/notifications.store'
 import { getLabelColor, cn } from '@/lib/utils'
 import type { Candidate, CandidateStatus, Job, ATSResponsePayload, ATSLabel } from '@/types'
 
@@ -231,6 +232,7 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
           appliedJobTitle: selectedJob.title,
           resumeText,
         })
+        notify('evaluation', 'Evaluation completed', `${candidate.name} — ${response.label} (${response.score.toFixed(1)})`)
       } catch (saveErr) {
         console.warn('[Pipeline] save failed:', saveErr)
       }

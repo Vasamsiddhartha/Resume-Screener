@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { useSettingsStore } from '@/store/settings.store'
 import { useThemeStore } from '@/store/theme.store'
 import { authService } from '@/services/auth.service'
+import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
 import type { NotificationPreferences } from '@/types'
 
@@ -83,6 +84,7 @@ function ProfileTab({ user, updateUser }: { user: ReturnType<typeof useAuthStore
   async function onSubmit(data: { name: string; email: string; phone: string; jobTitle: string }) {
     await authService.updateProfile(data)
     updateUser(data)
+    notify('settings', 'Profile updated', 'Your profile changes were saved')
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
