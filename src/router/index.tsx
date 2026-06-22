@@ -26,6 +26,7 @@ import { CandidatesPage } from '@/pages/org/Candidates'
 import { ATSEvaluationsPage } from '@/pages/org/ATSEvaluations'
 import { NewEvaluationPage } from '@/pages/org/NewEvaluation'
 import { OrgAnalytics } from '@/pages/org/Analytics'
+import { PipelinePage } from '@/pages/org/Pipeline'
 import { TeamMembersPage } from '@/pages/org/TeamMembers'
 import { OrgSettings } from '@/pages/org/Settings'
 
@@ -77,6 +78,7 @@ export const router = createHashRouter([
           { path: 'org/dashboard', element: <OrgDashboard /> },
           { path: 'org/jobs', element: <JobsPage /> },
           { path: 'org/candidates', element: <CandidatesPage /> },
+          { path: 'org/pipeline', element: <PipelinePage /> },
           { path: 'org/evaluations', element: <ATSEvaluationsPage /> },
           { path: 'org/evaluations/new', element: <NewEvaluationPage /> },
           { path: 'org/analytics', element: <OrgAnalytics /> },

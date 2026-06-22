@@ -60,9 +60,47 @@ export function CandidatesPage() {
     resolver: zodResolver(schema),
   })
 
+  const [pickedJobId, setPickedJobId] = useState('')
+  const [cvFile, setCvFile] = useState<File | null>(null)
+
+  const jobs = jobsData?.data ?? []
+  const jobPickOptions = [{ value: '', label: 'No job (optional)' }, ...jobs.map(j => ({ value: j.id, label: j.title }))]
+
+  function resetCreateForm() {
+    reset(); setPickedJobId(''); setCvFile(null)
+  }
+
   const createMutation = useMutation({
-    mutationFn: (payload: FormData) => candidateService.create(orgId, payload),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['candidates'] }); setCreateOpen(false); reset() },
+    mutationFn: async (payload: FormData) => {
+      const job = jobs.find(j => j.id === pickedJobId)
+      // 1) Create the candidate
+      const candidate = await candidateService.create(orgId, {
+        ...payload,
+        appliedJobId: job?.id,
+        appliedJobTitle: job?.title,
+        organizationName: user?.organizationName,
+      })
+
+      // 2) If a CV was attached, extract its text + upload it to the org's bucket
+      if (cvFile) {
+        const { storageService } = await import('@/services/storage.service')
+        const { extractResumeText } = await import('@/lib/extractText')
+        const resumeText = await extractResumeText(cvFile)
+        let resumePath: string | undefined
+        if (storageService.isEnabled()) {
+          try { resumePath = await storageService.uploadResume(orgId, candidate.id, cvFile) }
+          catch (e) { console.warn('[Candidate CV] upload failed:', e) }
+        }
+        if (resumeText || resumePath) {
+          await candidateService.update(candidate.id, {
+            resumeText: resumeText || undefined,
+            resumeUrl: resumePath,
+          })
+        }
+      }
+      return candidate
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['candidates'] }); setCreateOpen(false); resetCreateForm() },
   })
 
   const deleteMutation = useMutation({
@@ -155,11 +193,11 @@ export function CandidatesPage() {
 
       <Modal
         isOpen={createOpen}
-        onClose={() => { setCreateOpen(false); reset() }}
+        onClose={() => { setCreateOpen(false); resetCreateForm() }}
         title="Add Candidate"
         footer={
           <div className="flex gap-3 justify-end pt-4">
-            <Button variant="secondary" onClick={() => { setCreateOpen(false); reset() }}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setCreateOpen(false); resetCreateForm() }}>Cancel</Button>
             <Button isLoading={createMutation.isPending} onClick={handleSubmit(d => createMutation.mutate(d))}>
               Add
             </Button>
@@ -170,6 +208,26 @@ export function CandidatesPage() {
           <Input label="Full Name" placeholder="Jane Doe" error={errors.name?.message} {...register('name')} />
           <Input label="Email" type="email" placeholder="jane@email.com" error={errors.email?.message} {...register('email')} />
           <Input label="Phone" type="tel" placeholder="+1 555 000 0000" error={errors.phone?.message} {...register('phone')} />
+          <Select
+            label="Job Title"
+            options={jobPickOptions}
+            value={pickedJobId}
+            onChange={e => setPickedJobId(e.target.value)}
+          />
+          <div>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
+              Resume / CV / Cover letter
+            </label>
+            <input
+              type="file"
+              accept=".pdf,.docx,.txt"
+              onChange={e => setCvFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-50 file:text-violet-700 dark:file:bg-violet-900/30 dark:file:text-violet-400 hover:file:bg-violet-100 dark:hover:file:bg-violet-900/50 cursor-pointer"
+            />
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              PDF, DOCX, or TXT — stored securely in your organization's bucket
+            </p>
+          </div>
         </div>
       </Modal>
 

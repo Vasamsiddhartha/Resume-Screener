@@ -148,4 +148,34 @@ export const supabaseAuth = {
   async signOut(): Promise<void> {
     if (supabase) await supabase.auth.signOut()
   },
+
+  /** Create an additional organization for the CURRENT logged-in user.
+   *  This is how one account owns many orgs (no re-signup). */
+  async createOrganization(name: string): Promise<{ id: string; name: string }> {
+    if (!supabase) throw new Error('Supabase is not configured')
+    const { data: authData } = await supabase.auth.getUser()
+    const uid = authData?.user?.id
+    if (!uid) throw new Error('You must be signed in')
+
+    const slug =
+      name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') +
+      '-' + Math.random().toString(36).slice(2, 8)
+
+    const { data: org, error } = await supabase
+      .from('organizations')
+      .insert({ name: name.trim(), slug, email: authData?.user?.email ?? null })
+      .select('id, name')
+      .single()
+    if (error) throw error
+
+    const { error: memErr } = await supabase.from('memberships').insert({
+      user_id: uid,
+      organization_id: org.id,
+      organization_name: name.trim(),
+      role: 'org_admin',
+    })
+    if (memErr) throw memErr
+
+    return { id: org.id, name: org.name }
+  },
 }
