@@ -181,6 +181,7 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
   const [result, setResult] = useState<ATSResponsePayload | null>(null)
   const [error, setError] = useState('')
   const [extracting, setExtracting] = useState(false)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
 
   const { data: jobsData } = useQuery({
     queryKey: ['jobs', orgId, 'pipeline-active'],
@@ -192,6 +193,7 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setResumeFile(file)
     setExtracting(true)
     try {
       const { extractResumeText } = await import('@/lib/extractText')
@@ -223,6 +225,17 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
           label: response.label,
           evaluatedBy: user?.name ?? 'Recruiter',
         })
+        // Store the uploaded resume file in the org's bucket (if one was uploaded)
+        let resumePath: string | undefined
+        if (resumeFile) {
+          try {
+            const { storageService } = await import('@/services/storage.service')
+            if (storageService.isEnabled()) resumePath = await storageService.uploadResume(orgId, candidate.id, resumeFile)
+          } catch (upErr) {
+            console.warn('[Pipeline] resume upload failed:', upErr)
+          }
+        }
+
         // Evaluated → leaves the Candidates column
         await candidateService.update(candidate.id, {
           status: 'reviewing',
@@ -231,6 +244,7 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
           appliedJobId: selectedJob.id,
           appliedJobTitle: selectedJob.title,
           resumeText,
+          ...(resumePath ? { resumeUrl: resumePath } : {}),
         })
         notify('evaluation', 'Evaluation completed', `${candidate.name} — ${response.label} (${response.score.toFixed(1)})`)
       } catch (saveErr) {

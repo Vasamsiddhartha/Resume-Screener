@@ -34,6 +34,7 @@ export function NewEvaluationPage() {
 
   const [step, setStep] = useState<Step>('upload')
   const [resumeText, setResumeText] = useState('')
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
   const [selectedJobId, setSelectedJobId] = useState('')
   const [candidateName, setCandidateName] = useState('')
@@ -58,6 +59,7 @@ export function NewEvaluationPage() {
     const file = e.target.files?.[0]
     if (!file) return
     setFileName(file.name)
+    setResumeFile(file)
     setExtractError('')
 
     const name = file.name.toLowerCase()
@@ -161,6 +163,19 @@ export function NewEvaluationPage() {
           organizationName: user?.organizationName,
         })
 
+        // Store the uploaded resume file in the org's bucket (if one was uploaded)
+        if (resumeFile) {
+          try {
+            const { storageService } = await import('@/services/storage.service')
+            if (storageService.isEnabled()) {
+              const path = await storageService.uploadResume(orgId, candidate.id, resumeFile)
+              await candidateService.update(candidate.id, { resumeUrl: path })
+            }
+          } catch (upErr) {
+            console.warn('[Evaluation] resume upload failed:', upErr)
+          }
+        }
+
         await atsService.saveEvaluation(orgId, {
           organizationId: orgId,
           organizationName: user?.organizationName,
@@ -210,6 +225,7 @@ export function NewEvaluationPage() {
     setCandidateName('')
     setCandidateEmail('')
     setResult(null)
+    setResumeFile(null)
     setEvalError('')
     setSaveWarning('')
     setExtractError('')
