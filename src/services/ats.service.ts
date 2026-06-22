@@ -4,14 +4,10 @@ import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { candidateService } from '@/services/candidate.service'
 import { rowToEvaluation } from './mappers'
+import { getScoreModelUrl } from '@/store/settings.store'
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 let evaluations = [...MOCK_EVALUATIONS]
-
-// Resume scoring endpoint. Configurable via .env so it stays swappable,
-// defaulting to the deployed Hugging Face Space.
-const SCORE_API_URL =
-  import.meta.env.VITE_SCORE_API_URL ?? 'https://siddhartha1xl-resume-screening.hf.space/score'
 
 // The model may return labels like "Excellent Match" / "Moderate Match" /
 // "Poor Match", but the app + DB only use three: Good Fit / Potential Fit / No
@@ -30,7 +26,7 @@ export const atsService = {
   async evaluate(payload: ATSRequestPayload): Promise<ATSResponsePayload> {
     // The API expects { resume, job_description } and returns
     // { similarity, ats_score, label }.
-    const response = await fetch(SCORE_API_URL, {
+    const response = await fetch(getScoreModelUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Briefcase, Users, FileSearch, UserCog,
+  LayoutDashboard, Briefcase, Users, FileSearch,
   Settings, Menu, X, LogOut, User, Plus, BarChart3, KanbanSquare,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
@@ -17,7 +17,6 @@ const NAV_ITEMS = [
   { to: '/org/pipeline', icon: KanbanSquare, label: 'Pipeline' },
   { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
   { to: '/org/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/org/team', icon: UserCog, label: 'Team Members' },
   { to: '/org/settings', icon: Settings, label: 'Settings' },
 ]
 

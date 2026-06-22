@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Save, Building2, User, Bell, Palette, Sun, Moon, Monitor, CheckCircle } from 'lucide-react'
+import { Save, Building2, User, Bell, Palette, Sun, Moon, Monitor, CheckCircle, UserCog, Cpu, RotateCcw } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardHeader, Button, Input, Select, Textarea, Toggle } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
-import { useSettingsStore } from '@/store/settings.store'
+import { useSettingsStore, DEFAULT_MODEL } from '@/store/settings.store'
 import { useThemeStore } from '@/store/theme.store'
 import { authService } from '@/services/auth.service'
 import { notify } from '@/store/notifications.store'
+import { TeamMembersPage } from '@/pages/org/TeamMembers'
 import { cn } from '@/lib/utils'
 import type { NotificationPreferences } from '@/types'
 
-type Tab = 'profile' | 'notifications' | 'appearance' | 'organization'
+type Tab = 'profile' | 'team' | 'notifications' | 'appearance' | 'model' | 'organization'
 
 const NOTIFICATION_ITEMS: { key: keyof NotificationPreferences; label: string; description: string }[] = [
   { key: 'evaluationCompleted', label: 'Evaluation completed', description: 'Email me when an ATS evaluation finishes' },
@@ -28,8 +29,10 @@ export function OrgSettings() {
 
   const tabs: { key: Tab; label: string; icon: typeof User }[] = [
     { key: 'profile', label: 'Profile', icon: User },
+    { key: 'team', label: 'Team Members', icon: UserCog },
     { key: 'notifications', label: 'Notifications', icon: Bell },
     { key: 'appearance', label: 'Appearance', icon: Palette },
+    { key: 'model', label: 'Model', icon: Cpu },
     { key: 'organization', label: 'Organization', icon: Building2 },
   ]
 
@@ -59,8 +62,10 @@ export function OrgSettings() {
 
         <div className="flex-1 max-w-2xl">
           {tab === 'profile' && <ProfileTab user={user} updateUser={updateUser} />}
+          {tab === 'team' && <Card><TeamMembersPage embedded /></Card>}
           {tab === 'notifications' && <NotificationsTab />}
           {tab === 'appearance' && <AppearanceTab />}
+          {tab === 'model' && <ModelTab />}
           {tab === 'organization' && <OrganizationTab isAdmin={isAdmin} orgName={user?.organizationName ?? ''} />}
         </div>
       </div>
@@ -213,6 +218,65 @@ function AppearanceTab() {
           value={density}
           onChange={e => setDensity(e.target.value as 'comfortable' | 'compact')}
         />
+      </div>
+    </Card>
+  )
+}
+
+// ─── Model — change the scoring model endpoint (default = existing) ───────────
+
+function ModelTab() {
+  const { scoreModelUrl, setScoreModelUrl } = useSettingsStore()
+  const [value, setValue] = useState(scoreModelUrl)
+  const [saved, setSaved] = useState(false)
+  const usingDefault = !scoreModelUrl
+
+  function save() {
+    setScoreModelUrl(value)
+    notify('settings', 'Scoring model updated', value.trim() ? `Model endpoint set to ${value.trim()}` : 'Reverted to the default model')
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  function resetDefault() {
+    setValue('')
+    setScoreModelUrl('')
+    notify('settings', 'Scoring model updated', 'Reverted to the default model')
+  }
+
+  return (
+    <Card>
+      <CardHeader title="Scoring Model" description="The AI endpoint used to score resumes" />
+
+      <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Currently using</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          {usingDefault ? DEFAULT_MODEL.name : 'Custom endpoint'}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 break-all mt-0.5">
+          {scoreModelUrl || DEFAULT_MODEL.url}
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <Input
+          label="Model endpoint URL"
+          placeholder={DEFAULT_MODEL.url}
+          hint="Leave blank to use the default model. Must return { ats_score, label }."
+          value={value}
+          onChange={e => setValue(e.target.value)}
+        />
+        <div className="flex items-center gap-3 justify-end">
+          {saved && (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5" /> Saved
+            </span>
+          )}
+          <Button variant="ghost" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={resetDefault} disabled={usingDefault && !value}>
+            Use default
+          </Button>
+          <Button leftIcon={<Save className="w-4 h-4" />} onClick={save}>Save model</Button>
+        </div>
       </div>
     </Card>
   )

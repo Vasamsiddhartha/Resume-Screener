@@ -18,7 +18,7 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
-export function TeamMembersPage() {
+export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
   const isAdmin = user?.role === 'org_admin'
@@ -57,15 +57,29 @@ export function TeamMembersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Team Members"
-        description="Manage who has access to your organization"
-        action={isAdmin ? (
-          <Button leftIcon={<UserPlus className="w-4 h-4" />} onClick={() => setInviteOpen(true)}>
-            Invite Member
-          </Button>
-        ) : undefined}
-      />
+      {embedded ? (
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Team Members</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Manage who has access to your organization</p>
+          </div>
+          {isAdmin && (
+            <Button size="sm" leftIcon={<UserPlus className="w-4 h-4" />} onClick={() => setInviteOpen(true)}>
+              Invite Member
+            </Button>
+          )}
+        </div>
+      ) : (
+        <PageHeader
+          title="Team Members"
+          description="Manage who has access to your organization"
+          action={isAdmin ? (
+            <Button leftIcon={<UserPlus className="w-4 h-4" />} onClick={() => setInviteOpen(true)}>
+              Invite Member
+            </Button>
+          ) : undefined}
+        />
+      )}
 
       <Card padding="none">
         {isLoading ? (
