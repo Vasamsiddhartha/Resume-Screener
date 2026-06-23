@@ -11,6 +11,8 @@
 
 const MAIL_API_URL = import.meta.env.VITE_MAIL_API_URL ?? ''
 const MAIL_FROM = import.meta.env.VITE_MAIL_FROM ?? ''
+// Sender display name (the "From" name recipients see). Defaults to ATS Scanner.
+const MAIL_FROM_NAME = import.meta.env.VITE_MAIL_FROM_NAME ?? 'ATS Scanner'
 
 // EmailJS — works from the browser (CORS-friendly), no backend needed.
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID ?? ''
@@ -50,7 +52,7 @@ function toBase64Url(input: string): string {
 
 function buildRfc822({ to, subject, html }: MailMessage): string {
   return [
-    `From: ${MAIL_FROM || 'me'}`,
+    `From: ${MAIL_FROM ? `${MAIL_FROM_NAME} <${MAIL_FROM.replace(/.*<|>.*/g, '')}>` : MAIL_FROM_NAME}`,
     `To: ${to}`,
     `Subject: ${subject}`,
     'MIME-Version: 1.0',
@@ -124,7 +126,7 @@ async function sendViaEmailJS(msg: MailMessage): Promise<void> {
         to_email: msg.to,
         subject: msg.subject,
         message: msg.html,
-        from_name: MAIL_FROM || 'ATS Scanner',
+        from_name: MAIL_FROM_NAME,
       },
     }),
   })

@@ -11,11 +11,11 @@ export const DEFAULT_MODEL = {
 interface SettingsStore {
   notifications: NotificationPreferences
   density: 'comfortable' | 'compact'
-  // Empty string = use DEFAULT_MODEL.url
-  scoreModelUrl: string
+  // Optional fallback scoring endpoint, used only if the default model fails.
+  fallbackModelUrl: string
   setNotification: (key: keyof NotificationPreferences, value: boolean) => void
   setDensity: (density: 'comfortable' | 'compact') => void
-  setScoreModelUrl: (url: string) => void
+  setFallbackModelUrl: (url: string) => void
 }
 
 const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
@@ -31,20 +31,25 @@ export const useSettingsStore = create<SettingsStore>()(
     set => ({
       notifications: DEFAULT_NOTIFICATIONS,
       density: 'comfortable',
-      scoreModelUrl: '',
+      fallbackModelUrl: '',
 
       setNotification: (key, value) =>
         set(state => ({ notifications: { ...state.notifications, [key]: value } })),
 
       setDensity: (density) => set({ density }),
 
-      setScoreModelUrl: (url) => set({ scoreModelUrl: url.trim() }),
+      setFallbackModelUrl: (url) => set({ fallbackModelUrl: url.trim() }),
     }),
     { name: 'ats-settings' }
   )
 )
 
-/** The scoring endpoint actually in use (override or default). */
-export function getScoreModelUrl(): string {
-  return useSettingsStore.getState().scoreModelUrl || DEFAULT_MODEL.url
+/** The primary scoring endpoint (built-in default). */
+export function getPrimaryModelUrl(): string {
+  return DEFAULT_MODEL.url
+}
+
+/** The optional fallback endpoint (empty = none). Read live each call. */
+export function getFallbackModelUrl(): string {
+  return useSettingsStore.getState().fallbackModelUrl.trim()
 }

@@ -93,7 +93,7 @@ export function inviteEmail(o: { orgName: string; role: 'org_admin' | 'recruiter
       preheader: `You've been invited as ${roleLabel}`,
       bodyHtml: `<p style="margin:0 0 14px;">You've been invited to join <strong>${o.orgName}</strong> on ATS Scanner as <strong>${roleLabel}</strong>.</p>
                  <p style="margin:0;">Click the button below to set your password and access your account. This link is valid for the next 24 hours.</p>`,
-      ctaLabel: 'Accept invitation & set password',
+      ctaLabel: 'Accept invitation and set password',
       ctaUrl: o.acceptUrl,
       fallbackUrl: o.acceptUrl,
     }),
@@ -103,7 +103,8 @@ export function inviteEmail(o: { orgName: string; role: 'org_admin' | 'recruiter
 // ─── Evaluation completed ─────────────────────────────────────────────────────
 export function evaluationEmail(o: { candidateName: string; jobTitle: string; score: number; label: string; orgName: string; logoUrl?: string; appUrl: string }): EmailContent {
   return {
-    subject: `ATS result: ${o.candidateName} — ${o.label} (${o.score.toFixed(1)})`,
+    // ASCII-only subject (avoids mojibake like "Ã¢Â€Â" from em dashes in mail clients)
+    subject: `ATS result: ${o.candidateName} - ${o.label} (${o.score.toFixed(1)})`,
     html: emailLayout({
       brand: o.orgName,
       logoUrl: o.logoUrl,
@@ -115,7 +116,7 @@ export function evaluationEmail(o: { candidateName: string; jobTitle: string; sc
                      <td style="padding:10px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#64748b;">ATS Score</span>&nbsp;
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;color:#0f172a;">${o.score.toFixed(1)}</span>
-                       &nbsp;·&nbsp;
+                       &nbsp;&middot;&nbsp;
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:${GREEN};">${o.label}</span>
                      </td>
                    </tr>

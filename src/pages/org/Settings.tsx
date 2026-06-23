@@ -226,22 +226,15 @@ function AppearanceTab() {
 // ─── Model — change the scoring model endpoint (default = existing) ───────────
 
 function ModelTab() {
-  const { scoreModelUrl, setScoreModelUrl } = useSettingsStore()
-  const [value, setValue] = useState(scoreModelUrl)
+  const { fallbackModelUrl, setFallbackModelUrl } = useSettingsStore()
+  const [value, setValue] = useState(fallbackModelUrl)
   const [saved, setSaved] = useState(false)
-  const usingDefault = !scoreModelUrl
 
   function save() {
-    setScoreModelUrl(value)
-    notify('settings', 'Scoring model updated', value.trim() ? `Model endpoint set to ${value.trim()}` : 'Reverted to the default model')
+    setFallbackModelUrl(value)
+    notify('settings', 'Fallback model updated', value.trim() ? `Fallback set to ${value.trim()}` : 'Fallback model cleared')
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
-  }
-
-  function resetDefault() {
-    setValue('')
-    setScoreModelUrl('')
-    notify('settings', 'Scoring model updated', 'Reverted to the default model')
   }
 
   return (
@@ -249,20 +242,16 @@ function ModelTab() {
       <CardHeader title="Scoring Model" description="The AI endpoint used to score resumes" />
 
       <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Currently using</p>
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-          {usingDefault ? DEFAULT_MODEL.name : 'Custom endpoint'}
-        </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 break-all mt-0.5">
-          {scoreModelUrl || DEFAULT_MODEL.url}
-        </p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Primary model</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{DEFAULT_MODEL.name}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 break-all mt-0.5">{DEFAULT_MODEL.url}</p>
       </div>
 
       <div className="space-y-4">
         <Input
-          label="Model endpoint URL"
-          placeholder={DEFAULT_MODEL.url}
-          hint="Leave blank to use the default model. Must return { ats_score, label }."
+          label="Fallback model"
+          placeholder=""
+          hint="Optional. If the primary model is unavailable, this endpoint is used automatically. Takes effect immediately. Must return { ats_score, label }."
           value={value}
           onChange={e => setValue(e.target.value)}
         />
@@ -272,10 +261,10 @@ function ModelTab() {
               <CheckCircle className="w-3.5 h-3.5" /> Saved
             </span>
           )}
-          <Button variant="ghost" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={resetDefault} disabled={usingDefault && !value}>
-            Use default
+          <Button variant="ghost" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={() => { setValue(''); setFallbackModelUrl('') }} disabled={!value && !fallbackModelUrl}>
+            Clear
           </Button>
-          <Button leftIcon={<Save className="w-4 h-4" />} onClick={save}>Save model</Button>
+          <Button leftIcon={<Save className="w-4 h-4" />} onClick={save}>Save</Button>
         </div>
       </div>
     </Card>
@@ -288,6 +277,7 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
   const { user, updateUser } = useAuthStore()
   const [logo, setLogo] = useState(user?.organizationLogo)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoError, setLogoError] = useState('')
   const { register, handleSubmit } = useForm({
     defaultValues: {
       name: orgName,
@@ -303,33 +293,45 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
     console.log('Org settings saved', data)
   }
 
+  function applyLogo(url: string) {
+    const memberships = (user?.memberships ?? []).map(m =>
+      m.organizationId === user?.organizationId ? { ...m, organizationLogo: url } : m
+    )
+    updateUser({ organizationLogo: url, memberships })
+    setLogo(url)
+  }
+
   async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !user?.organizationId) return
     setUploadingLogo(true)
+    setLogoError('')
     try {
-      let url: string
       const { isSupabaseConfigured, supabase } = await import('@/lib/supabase')
+
       if (isSupabaseConfigured && supabase) {
+        // 1) Upload the file to the public logos bucket (requires 0006 applied)
         const { storageService } = await import('@/services/storage.service')
-        url = await storageService.uploadLogo(user.organizationId, file)
-        await supabase.from('organizations').update({ logo_url: url }).eq('id', user.organizationId)
+        const url = await storageService.uploadLogo(user.organizationId, file)
+        // 2) Reflect immediately so the UI updates even if the row update lags
+        applyLogo(url)
+        notify('org', 'Logo updated', 'Your organization logo was changed')
+        // 3) Persist the URL on the organization row (surface a clear error if blocked)
+        const { error } = await supabase.from('organizations').update({ logo_url: url }).eq('id', user.organizationId)
+        if (error) setLogoError(`Logo uploaded, but saving it to the organization failed: ${error.message}`)
       } else {
         // Mock mode — keep a local data URL
-        url = await new Promise<string>(res => {
+        const url = await new Promise<string>(res => {
           const r = new FileReader()
           r.onload = () => res(r.result as string)
           r.readAsDataURL(file)
         })
+        applyLogo(url)
+        notify('org', 'Logo updated', 'Your organization logo was changed')
       }
-      // Reflect immediately (active org + the matching membership)
-      const memberships = (user.memberships ?? []).map(m =>
-        m.organizationId === user.organizationId ? { ...m, organizationLogo: url } : m
-      )
-      updateUser({ organizationLogo: url, memberships })
-      setLogo(url)
-      notify('org', 'Logo updated', 'Your organization logo was changed')
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Upload failed'
+      setLogoError(/bucket|not found/i.test(msg) ? `${msg}. Did you run 0006_logos.sql?` : msg)
       console.warn('[Logo] upload failed:', err)
     } finally {
       setUploadingLogo(false)
@@ -358,6 +360,11 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
           )}
         </div>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">Any image format (PNG, JPG, SVG, WebP…). Square works best.</p>
+        {logoError && (
+          <div className="mt-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-700 dark:text-amber-400 break-all">{logoError}</p>
+          </div>
+        )}
       </Card>
 
       <Card>

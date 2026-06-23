@@ -4,10 +4,34 @@ import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { candidateService } from '@/services/candidate.service'
 import { rowToEvaluation } from './mappers'
-import { getScoreModelUrl } from '@/store/settings.store'
+import { getPrimaryModelUrl, getFallbackModelUrl } from '@/store/settings.store'
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 let evaluations = [...MOCK_EVALUATIONS]
+
+// Call one scoring endpoint and parse its response.
+async function callModel(url: string, payload: ATSRequestPayload): Promise<ATSResponsePayload> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resume: payload.resume_text, job_description: payload.job_description }),
+  })
+  if (!response.ok) {
+    const text = await response.text().catch(() => response.statusText)
+    throw new Error(`Scoring API responded with ${response.status}: ${text}`)
+  }
+  const raw = await response.json()
+  const item = Array.isArray(raw) ? raw[0] : raw
+  if (!item || (item.ats_score == null && item.score == null)) {
+    throw new Error('Scoring API returned an unexpected response shape')
+  }
+  const score = Number(item.ats_score ?? item.score)
+  return {
+    score,
+    label: normalizeLabel(item.label, score),
+    similarity: item.similarity != null ? Number(item.similarity) : undefined,
+  }
+}
 
 // The model may return labels like "Excellent Match" / "Moderate Match" /
 // "Poor Match", but the app + DB only use three: Good Fit / Potential Fit / No
@@ -24,40 +48,18 @@ function normalizeLabel(raw: unknown, score: number): import('@/types').ATSLabel
 
 export const atsService = {
   async evaluate(payload: ATSRequestPayload): Promise<ATSResponsePayload> {
-    // The API expects { resume, job_description } and returns
-    // { similarity, ats_score, label }.
-    const response = await fetch(getScoreModelUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        resume: payload.resume_text,
-        job_description: payload.job_description,
-      }),
-    })
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => response.statusText)
-      throw new Error(`Scoring API responded with ${response.status}: ${text}`)
+    // Try the primary (default) model. If it fails and a fallback model is
+    // configured in Settings → Model, retry with the fallback (read live).
+    try {
+      return await callModel(getPrimaryModelUrl(), payload)
+    } catch (primaryErr) {
+      const fallback = getFallbackModelUrl()
+      if (fallback) {
+        console.warn('[ATS] primary model failed, trying fallback:', primaryErr)
+        return await callModel(fallback, payload)
+      }
+      throw primaryErr
     }
-
-    const raw = await response.json()
-    console.log('[ATS Score API] Raw response:', raw)
-
-    // Tolerate both a bare object and an array-wrapped object
-    const item = Array.isArray(raw) ? raw[0] : raw
-    if (!item || (item.ats_score == null && item.score == null)) {
-      throw new Error('Scoring API returned an unexpected response shape')
-    }
-
-    const score = Number(item.ats_score ?? item.score)
-    const result: ATSResponsePayload = {
-      score,
-      label: normalizeLabel(item.label, score),
-      similarity: item.similarity != null ? Number(item.similarity) : undefined,
-    }
-
-    console.log('[ATS Score API] Parsed result:', result)
-    return result
   },
 
   async saveEvaluation(

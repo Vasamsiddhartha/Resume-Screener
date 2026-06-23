@@ -285,7 +285,7 @@ export function NewEvaluationPage() {
         ]}
       />
 
-      <div className="max-w-2xl">
+      <div className="max-w-4xl mx-auto">
         <StepIndicator />
 
         {/* Step 1: Upload Resume */}
