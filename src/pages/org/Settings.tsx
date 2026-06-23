@@ -307,30 +307,33 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
     setLogoError('')
     try {
       const { isSupabaseConfigured, supabase } = await import('@/lib/supabase')
+      const { fileToSmallDataUrl } = await import('@/lib/image')
 
+      let url: string
       if (isSupabaseConfigured && supabase) {
-        // 1) Upload the file to the public logos bucket (requires 0006 applied)
-        const { storageService } = await import('@/services/storage.service')
-        const url = await storageService.uploadLogo(user.organizationId, file)
-        // 2) Reflect immediately so the UI updates even if the row update lags
+        // Prefer the storage bucket (clean public URL, works in emails). If the
+        // bucket write is blocked by RLS, fall back to a small inline image so
+        // the logo always works.
+        try {
+          const { storageService } = await import('@/services/storage.service')
+          url = await storageService.uploadLogo(user.organizationId, file)
+        } catch (storageErr) {
+          console.warn('[Logo] bucket upload blocked, using inline image:', storageErr)
+          url = await fileToSmallDataUrl(file)
+        }
         applyLogo(url)
         notify('org', 'Logo updated', 'Your organization logo was changed')
-        // 3) Persist the URL on the organization row (surface a clear error if blocked)
+        // Persist on the organization row (best-effort; surface a clear error)
         const { error } = await supabase.from('organizations').update({ logo_url: url }).eq('id', user.organizationId)
-        if (error) setLogoError(`Logo uploaded, but saving it to the organization failed: ${error.message}`)
+        if (error) setLogoError(`Logo shown, but it couldn't be saved to the organization: ${error.message}`)
       } else {
-        // Mock mode — keep a local data URL
-        const url = await new Promise<string>(res => {
-          const r = new FileReader()
-          r.onload = () => res(r.result as string)
-          r.readAsDataURL(file)
-        })
+        url = await fileToSmallDataUrl(file)
         applyLogo(url)
         notify('org', 'Logo updated', 'Your organization logo was changed')
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed'
-      setLogoError(/bucket|not found/i.test(msg) ? `${msg}. Did you run 0006_logos.sql?` : msg)
+      setLogoError(msg)
       console.warn('[Logo] upload failed:', err)
     } finally {
       setUploadingLogo(false)
