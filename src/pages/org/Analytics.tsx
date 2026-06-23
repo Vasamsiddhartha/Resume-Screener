@@ -10,13 +10,11 @@ import { atsService } from '@/services/ats.service'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-
-const TOOLTIP_STYLE = {
-  contentStyle: { background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '12px' },
-}
+import { useChartTheme } from '@/lib/chartTheme'
 
 export function OrgAnalytics() {
   const { user } = useAuthStore()
+  const chart = useChartTheme()
   const orgId = user?.organizationId ?? 'org1'
 
   const { data: jobsData, isLoading: jobsLoading } = useQuery({
@@ -106,10 +104,10 @@ export function OrgAnalytics() {
           <CardHeader title="Hiring Funnel" description="Candidates → evaluated → shortlisted → hired" />
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={funnel} layout="vertical" margin={{ left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="stage" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={80} />
-              <Tooltip {...TOOLTIP_STYLE} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="stage" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} width={80} />
+              <Tooltip {...chart.tooltip} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={28}>
                 {funnel.map((f, i) => <Cell key={i} fill={f.color} />)}
               </Bar>
@@ -125,10 +123,10 @@ export function OrgAnalytics() {
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={candidatesPerJob}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip {...TOOLTIP_STYLE} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: chart.tick }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
+                <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip {...chart.tooltip} />
                 <Bar dataKey="candidates" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>

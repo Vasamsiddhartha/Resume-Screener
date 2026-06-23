@@ -7,6 +7,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
+import { useChartTheme } from '@/lib/chartTheme'
 
 const MONTHLY = [
   { month: 'Jan', evaluations: 145, orgs: 3, users: 45 },
@@ -32,11 +33,8 @@ const SCORE_DIST = [
   { label: 'Poor', count: 260 },
 ]
 
-const TOOLTIP_STYLE = {
-  contentStyle: { background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '12px' },
-}
-
 export function AnalyticsPage() {
+  const chart = useChartTheme()
   return (
     <div>
       <PageHeader title="Platform Analytics" description="Usage metrics and performance insights" />
@@ -57,10 +55,10 @@ export function AnalyticsPage() {
           <CardHeader title="Evaluation & User Growth" />
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={MONTHLY}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip {...TOOLTIP_STYLE} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <Tooltip {...chart.tooltip} />
               <Legend wrapperStyle={{ fontSize: '12px' }} />
               <Line type="monotone" dataKey="evaluations" name="Evaluations" stroke="#7c3aed" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="users" name="Users" stroke="#10b981" strokeWidth={2} dot={false} />
@@ -77,7 +75,7 @@ export function AnalyticsPage() {
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip {...TOOLTIP_STYLE} />
+              <Tooltip {...chart.tooltip} />
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-2 mt-2">
@@ -95,10 +93,10 @@ export function AnalyticsPage() {
         <CardHeader title="Score Distribution Across Platform" description="How candidates are scoring across all organizations" />
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={SCORE_DIST} barSize={40}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <Tooltip {...TOOLTIP_STYLE} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+            <Tooltip {...chart.tooltip} />
             <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

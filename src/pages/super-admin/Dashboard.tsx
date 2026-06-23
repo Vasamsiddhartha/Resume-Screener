@@ -8,6 +8,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { useChartTheme } from '@/lib/chartTheme'
 
 const MONTHLY_DATA = [
   { month: 'Jan', evaluations: 145, organizations: 3 },
@@ -20,6 +21,7 @@ const MONTHLY_DATA = [
 
 export function SuperAdminDashboard() {
   const analytics = MOCK_PLATFORM_ANALYTICS
+  const chart = useChartTheme()
 
   return (
     <div>
@@ -86,12 +88,10 @@ export function SuperAdminDashboard() {
                   <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:[&>line]:stroke-slate-800" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '12px' }}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <Tooltip {...chart.tooltip} />
               <Area type="monotone" dataKey="evaluations" stroke="#7c3aed" strokeWidth={2} fill="url(#evalGrad)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -101,12 +101,10 @@ export function SuperAdminDashboard() {
           <CardHeader title="Organizations Growth" description="New orgs per month" />
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={MONTHLY_DATA} barSize={20}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:[&>line]:stroke-slate-800" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '12px' }}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <Tooltip {...chart.tooltip} />
               <Bar dataKey="organizations" fill="#7c3aed" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

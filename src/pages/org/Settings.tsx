@@ -26,7 +26,7 @@ function SettingsSection({ title, description, children }: { title: string; desc
   return (
     <div>
       <PageHeader title={title} description={description} />
-      <div className="max-w-3xl">{children}</div>
+      {children}
     </div>
   )
 }
@@ -36,7 +36,8 @@ export function SettingsProfilePage() {
   return <SettingsSection title="Profile" description="Update your personal information"><ProfileTab user={user} updateUser={updateUser} /></SettingsSection>
 }
 export function SettingsTeamPage() {
-  return <SettingsSection title="Team Members" description="Manage who has access to your organization"><Card><TeamMembersPage embedded /></Card></SettingsSection>
+  // Render the full Team Members page (its own header carries the Invite action).
+  return <TeamMembersPage />
 }
 export function SettingsNotificationsPage() {
   return <SettingsSection title="Notifications" description="Choose what we email you about"><NotificationsTab /></SettingsSection>
@@ -84,7 +85,6 @@ function ProfileTab({ user, updateUser }: { user: ReturnType<typeof useAuthStore
 
   return (
     <Card>
-      <CardHeader title="Profile" description="Update your personal information" />
       <div className="flex items-center gap-4 mb-6">
         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xl font-bold">
           {user?.name?.charAt(0) ?? 'U'}
@@ -127,7 +127,6 @@ function NotificationsTab() {
 
   return (
     <Card>
-      <CardHeader title="Email Notifications" description="Choose what we email you about" />
       <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {NOTIFICATION_ITEMS.map(item => (
           <Toggle
@@ -162,8 +161,6 @@ function AppearanceTab() {
 
   return (
     <Card>
-      <CardHeader title="Appearance" description="Customize how the app looks" />
-
       <div className="mb-6">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Theme</p>
         <div className="grid grid-cols-3 gap-3">
@@ -218,8 +215,6 @@ function ModelTab() {
 
   return (
     <Card>
-      <CardHeader title="Scoring Model" description="The AI endpoint used to score resumes" />
-
       <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
         <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Primary model</p>
         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{DEFAULT_MODEL.name}</p>

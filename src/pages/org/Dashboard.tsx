@@ -14,16 +14,14 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
-
-const TOOLTIP_STYLE = {
-  contentStyle: { background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '12px' },
-}
+import { useChartTheme } from '@/lib/chartTheme'
 
 const PIE_COLORS = ['#10b981', '#22c55e', '#eab308', '#f97316', '#ef4444', '#8b5cf6', '#ec4899']
 
 export function OrgDashboard() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const chart = useChartTheme()
   const orgId = user?.organizationId ?? 'org1'
 
   // Live data — keys share the 'evaluations'/'candidates'/'jobs' prefixes so a
@@ -109,10 +107,10 @@ export function OrgDashboard() {
                   <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip {...TOOLTIP_STYLE} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
+              <Tooltip {...chart.tooltip} />
               <Area type="monotone" dataKey="evaluations" name="Evaluations" stroke="#7c3aed" strokeWidth={2} fill="url(#orgGrad)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -133,7 +131,7 @@ export function OrgDashboard() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip {...TOOLTIP_STYLE} />
+                  <Tooltip {...chart.tooltip} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-1.5">

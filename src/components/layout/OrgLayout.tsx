@@ -114,9 +114,20 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Org switcher */}
-        <div className="h-14 flex items-center gap-1.5 px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <OrgSwitcher />
+        {/* Current organization (static brand — switching lives in the top bar) */}
+        <div className="h-14 flex items-center gap-2 px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {user?.organizationLogo ? (
+              <img src={user.organizationLogo} alt={user.organizationName} className="w-7 h-7 rounded-lg object-cover shrink-0 bg-white" />
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {(user?.organizationName ?? 'O').charAt(0)}
+              </div>
+            )}
+            <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
+              {user?.organizationName ?? 'Organization'}
+            </span>
+          </div>
           <button onClick={onClose} className="lg:hidden p-1 rounded text-slate-400 hover:text-slate-600 shrink-0">
             <X className="w-4 h-4" />
           </button>
@@ -203,6 +214,7 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <Menu className="w-5 h-5" />
       </button>
       <div className="flex-1" />
+      <OrgSwitcher variant="header" />
       <span className="text-xs text-slate-500 dark:text-slate-400 capitalize hidden sm:block">
         {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
       </span>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronsUpDown, Check, Building2, Plus } from 'lucide-react'
+import { ChevronsUpDown, ChevronDown, Check, Building2, Plus } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal, Input, Button } from '@/components/ui'
@@ -21,7 +21,7 @@ function OrgAvatar({ name, logo, size = 7 }: { name: string; logo?: string; size
   )
 }
 
-export function OrgSwitcher() {
+export function OrgSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' | 'header' } = {}) {
   const { user, switchOrganization, setAuth, updateUser } = useAuthStore()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -89,23 +89,46 @@ export function OrgSwitcher() {
     }
   }
 
+  const isHeader = variant === 'header'
+  const otherCount = memberships.filter(m => m.organizationId !== activeId).length
+
   return (
     <>
-      <div ref={ref} className="relative min-w-0 flex-1">
+      {isHeader && (
+        <span className="hidden md:block text-sm text-slate-400 dark:text-slate-500 mr-1">
+          Click to switch to a different org
+        </span>
+      )}
+      <div ref={ref} className={cn('relative min-w-0', isHeader ? 'shrink-0' : 'flex-1')}>
         <button
           onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center gap-2 px-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-w-0"
+          className={cn(
+            'flex items-center gap-2 transition-colors min-w-0',
+            isHeader
+              ? 'px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+              : 'w-full px-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800'
+          )}
         >
           <OrgAvatar name={activeName} logo={user?.organizationLogo} />
-          <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate flex-1 text-left">{activeName}</span>
-          <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate flex-1 text-left max-w-[160px]">{activeName}</span>
+          {isHeader
+            ? <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform', open && 'rotate-180')} />
+            : <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
         </button>
 
         {open && (
-          <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-50">
+          <div className={cn(
+            'absolute top-full mt-1 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-50',
+            isHeader ? 'right-0' : 'left-0'
+          )}>
             <p className="px-3 py-1.5 text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Building2 className="w-3 h-3" /> Your organizations
+              <Building2 className="w-3 h-3" /> Switch organization
             </p>
+            {otherCount === 0 && (
+              <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 italic">
+                No other organizations
+              </p>
+            )}
             {memberships.map(m => (
               <button
                 key={m.organizationId}
