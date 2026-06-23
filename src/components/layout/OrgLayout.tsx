@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard, Briefcase, Users, FileSearch,
-  Settings, Menu, X, LogOut, User, Plus, BarChart3, KanbanSquare,
+  Settings, Menu, X, LogOut, User, Plus, BarChart3, ChevronDown,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
@@ -10,15 +11,68 @@ import { OrgSwitcher } from '@/components/shared/OrgSwitcher'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
+type NavLeaf = { to: string; icon: LucideIcon; label: string }
+type NavGroupItem = { icon: LucideIcon; label: string; children: { to: string; label: string }[] }
+type NavItem = NavLeaf | NavGroupItem
+
+const NAV_ITEMS: NavItem[] = [
   { to: '/org/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/org/jobs', icon: Briefcase, label: 'Jobs' },
-  { to: '/org/candidates', icon: Users, label: 'Candidates' },
-  { to: '/org/pipeline', icon: KanbanSquare, label: 'Pipeline' },
+  {
+    icon: Users, label: 'Candidates', children: [
+      { to: '/org/candidates', label: 'Candidates' },
+      { to: '/org/pipeline', label: 'Pipeline' },
+    ],
+  },
   { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
   { to: '/org/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/org/settings', icon: Settings, label: 'Settings' },
 ]
+
+function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => void }) {
+  const { pathname } = useLocation()
+  const childActive = item.children.some(c => pathname.startsWith(c.to))
+  const [open, setOpen] = useState(childActive)
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={cn(
+          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+          childActive
+            ? 'text-violet-700 dark:text-violet-400'
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+        )}
+      >
+        <item.icon className="w-4 h-4 shrink-0" />
+        {item.label}
+        <ChevronDown className={cn('w-3.5 h-3.5 ml-auto transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="mt-0.5 ml-4 pl-3 border-l border-slate-100 dark:border-slate-800 space-y-0.5">
+          {item.children.map(c => (
+            <NavLink
+              key={c.to}
+              to={c.to}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  'block px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                )
+              }
+            >
+              {c.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user, logout } = useAuthStore()
@@ -62,24 +116,28 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-                )
-              }
-              onClick={() => onClose()}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {label}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map(item =>
+            'children' in item ? (
+              <NavGroup key={item.label} item={item} onNavigate={onClose} />
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                  )
+                }
+                onClick={() => onClose()}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {item.label}
+              </NavLink>
+            )
+          )}
         </nav>
 
         {/* User */}

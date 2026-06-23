@@ -244,7 +244,6 @@ function ModelTab() {
       <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
         <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Primary model</p>
         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{DEFAULT_MODEL.name}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 break-all mt-0.5">{DEFAULT_MODEL.url}</p>
       </div>
 
       <div className="space-y-4">

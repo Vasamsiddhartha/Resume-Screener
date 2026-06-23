@@ -1,7 +1,7 @@
 // Self-contained, email-safe HTML templates (tables + inline styles).
 // No external template service — we pass the full HTML to mailService.send().
 // Styled to match the shared 1XL reset-password design: centered brand,
-// white card with a green accent bar, bold heading, green CTA, link footer.
+// white card with a violet accent bar, bold heading, violet CTA, link footer.
 
 interface LayoutOpts {
   brand: string
@@ -15,7 +15,7 @@ interface LayoutOpts {
   preheader?: string
 }
 
-const GREEN = '#16a34a'
+const ACCENT = '#7c3aed' // app theme (violet-600)
 const TEXT = '#334155'
 const MUTED = '#94a3b8'
 const HEADING = '#0f172a'
@@ -36,14 +36,14 @@ function emailLayout(o: LayoutOpts): string {
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
         <tr><td align="center" style="padding:16px 0 24px;">${logo}</td></tr>
         <tr><td style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-          <div style="height:5px;background:${GREEN};"></div>
+          <div style="height:5px;background:${ACCENT};"></div>
           <div style="padding:32px 36px;">
             ${o.greeting ? `<p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${MUTED};">${o.greeting}</p>` : ''}
             <h1 style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1.3;color:${HEADING};font-weight:700;">${o.heading}</h1>
             <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:${TEXT};">${o.bodyHtml}</div>
             ${o.ctaLabel && o.ctaUrl ? `
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 8px;"><tr>
-              <td align="center" style="border-radius:10px;background:${GREEN};">
+              <td align="center" style="border-radius:10px;background:${ACCENT};">
                 <a href="${o.ctaUrl}" style="display:inline-block;padding:13px 30px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">${o.ctaLabel}</a>
               </td>
             </tr></table>` : ''}
@@ -51,7 +51,7 @@ function emailLayout(o: LayoutOpts): string {
         </td></tr>
         <tr><td style="padding:20px 24px;text-align:center;">
           ${o.fallbackUrl ? `<p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${MUTED};">If the button doesn't work, paste this link into your browser:</p>
-          <a href="${o.fallbackUrl}" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${GREEN};word-break:break-all;">${o.fallbackUrl}</a>` : ''}
+          <a href="${o.fallbackUrl}" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${ACCENT};word-break:break-all;">${o.fallbackUrl}</a>` : ''}
           <p style="margin:14px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:${MUTED};">© ${year} ${o.brand}. All rights reserved.</p>
         </td></tr>
       </table>
@@ -117,7 +117,7 @@ export function evaluationEmail(o: { candidateName: string; jobTitle: string; sc
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#64748b;">ATS Score</span>&nbsp;
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;color:#0f172a;">${o.score.toFixed(1)}</span>
                        &nbsp;&middot;&nbsp;
-                       <span style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:${GREEN};">${o.label}</span>
+                       <span style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:${ACCENT};">${o.label}</span>
                      </td>
                    </tr>
                  </table>`,
