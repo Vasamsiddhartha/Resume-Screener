@@ -12,43 +12,62 @@ import { NotificationBell } from '@/components/shared/NotificationBell'
 import { cn } from '@/lib/utils'
 
 type NavLeaf = { to: string; icon: LucideIcon; label: string }
-type NavGroupItem = { icon: LucideIcon; label: string; children: { to: string; label: string }[] }
+type NavGroupItem = { to?: string; icon: LucideIcon; label: string; children: { to: string; label: string }[] }
 type NavItem = NavLeaf | NavGroupItem
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/org/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/org/jobs', icon: Briefcase, label: 'Jobs' },
   {
-    icon: Users, label: 'Candidates', children: [
-      { to: '/org/candidates', label: 'Candidates' },
+    to: '/org/candidates', icon: Users, label: 'Candidates', children: [
       { to: '/org/pipeline', label: 'Pipeline' },
     ],
   },
   { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
   { to: '/org/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/org/settings', icon: Settings, label: 'Settings' },
+  {
+    icon: Settings, label: 'Settings', children: [
+      { to: '/org/settings/profile', label: 'Profile' },
+      { to: '/org/settings/team', label: 'Team Members' },
+      { to: '/org/settings/notifications', label: 'Notifications' },
+      { to: '/org/settings/appearance', label: 'Appearance' },
+      { to: '/org/settings/model', label: 'Model' },
+      { to: '/org/settings/organization', label: 'Organization' },
+    ],
+  },
 ]
 
 function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => void }) {
   const { pathname } = useLocation()
   const childActive = item.children.some(c => pathname.startsWith(c.to))
-  const [open, setOpen] = useState(childActive)
+  const parentActive = item.to ? pathname === item.to || pathname.startsWith(item.to + '/') : false
+  const [open, setOpen] = useState(childActive || parentActive)
+
+  const headerClass = cn(
+    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+    childActive || parentActive
+      ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
+      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+  )
 
   return (
     <div>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className={cn(
-          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-          childActive
-            ? 'text-violet-700 dark:text-violet-400'
-            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+      <div className="flex items-center">
+        {item.to ? (
+          <NavLink to={item.to} onClick={onNavigate} className={cn(headerClass, 'flex-1')}>
+            <item.icon className="w-4 h-4 shrink-0" />
+            {item.label}
+          </NavLink>
+        ) : (
+          <button onClick={() => setOpen(o => !o)} className={cn(headerClass, 'flex-1')}>
+            <item.icon className="w-4 h-4 shrink-0" />
+            {item.label}
+          </button>
         )}
-      >
-        <item.icon className="w-4 h-4 shrink-0" />
-        {item.label}
-        <ChevronDown className={cn('w-3.5 h-3.5 ml-auto transition-transform', open && 'rotate-180')} />
-      </button>
+        <button onClick={() => setOpen(o => !o)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Toggle">
+          <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
+        </button>
+      </div>
       {open && (
         <div className="mt-0.5 ml-4 pl-3 border-l border-slate-100 dark:border-slate-800 space-y-0.5">
           {item.children.map(c => (

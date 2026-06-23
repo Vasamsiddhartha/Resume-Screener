@@ -9,16 +9,29 @@ import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner, Texta
 import { jobService } from '@/services/job.service'
 import { candidateService } from '@/services/candidate.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { formatDate, parseJobDescription } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { notify } from '@/store/notifications.store'
 import type { Job } from '@/types'
 
 const schema = z.object({
-  description: z.string().min(20, 'Paste the full job description (min. 20 characters)'),
+  title: z.string().min(2, 'Required'),
+  department: z.string().min(1, 'Required'),
+  location: z.string().min(1, 'Required'),
+  experienceRequired: z.string().min(1, 'Required'),
+  employmentType: z.enum(['full_time', 'part_time', 'contract', 'freelance', 'internship']),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
 })
 
 type FormData = z.infer<typeof schema>
+
+const EMP_TYPE_OPTIONS = [
+  { value: 'full_time', label: 'Full Time' },
+  { value: 'part_time', label: 'Part Time' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'freelance', label: 'Freelance' },
+  { value: 'internship', label: 'Internship' },
+]
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
@@ -60,27 +73,16 @@ export function JobsPage() {
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { description: '' },
+    defaultValues: { employmentType: 'full_time' },
   })
 
   const createMutation = useMutation({
-    mutationFn: (payload: FormData) => {
-      const { title, jobType } = parseJobDescription(payload.description)
-      return jobService.create(orgId, {
-        description: payload.description,
-        title,
-        jobType,
-        organizationName: user?.organizationName,
-      })
-    },
+    mutationFn: (payload: FormData) => jobService.create(orgId, { ...payload, organizationName: user?.organizationName }),
     onSuccess: (job) => { notify('job', 'Job created', job.title); queryClient.invalidateQueries({ queryKey: ['jobs'] }); setCreateOpen(false); reset() },
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: FormData }) => {
-      const { title, jobType } = parseJobDescription(payload.description)
-      return jobService.update(id, { title, jobType, description: payload.description })
-    },
+    mutationFn: ({ id, payload }: { id: string; payload: FormData }) => jobService.update(id, payload),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['jobs'] }); setEditTarget(null); reset() },
   })
 
@@ -101,6 +103,11 @@ export function JobsPage() {
 
   function openEdit(job: Job) {
     setEditTarget(job)
+    setValue('title', job.title)
+    setValue('department', job.department)
+    setValue('location', job.location)
+    setValue('experienceRequired', job.experienceRequired)
+    setValue('employmentType', job.employmentType)
     setValue('description', job.description)
     setActionMenu(null)
   }
@@ -171,17 +178,14 @@ export function JobsPage() {
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {job.jobType && (
-                        <>
-                          <span className="font-medium text-slate-600 dark:text-slate-300">{job.jobType}</span>
-                          <span>·</span>
-                        </>
-                      )}
-                      <span className="truncate max-w-md">
-                        {job.description.replace(/\s+/g, ' ').slice(0, 110)}
-                        {job.description.length > 110 ? '…' : ''}
-                      </span>
+                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{job.department}</span>
+                      <span>·</span>
+                      <span>{job.location}</span>
+                      <span>·</span>
+                      <span>{job.experienceRequired}</span>
+                      <span>·</span>
+                      <span className="capitalize">{job.employmentType.replace('_', ' ')}</span>
                     </div>
                   </div>
                   <div className="hidden md:flex items-center gap-4 text-sm shrink-0">
@@ -247,18 +251,15 @@ export function JobsPage() {
           </div>
         }
       >
-        <div className="space-y-3">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Paste the full job description below. We'll automatically pull out the
-            <strong> Job Title</strong> and <strong>Type</strong> (e.g. "Full-time, On-site") from the text.
-          </p>
-          <Textarea
-            label="Job Description"
-            rows={16}
-            placeholder={'Job Title: Public Relations Officer (PRO) — 1XL Infra\nType: Full-time, On-site\n\nOverview:\n…'}
-            error={errors.description?.message}
-            {...register('description')}
-          />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Job Title" placeholder="e.g. Senior Engineer" error={errors.title?.message} {...register('title')} />
+            <Input label="Department" placeholder="e.g. Engineering" error={errors.department?.message} {...register('department')} />
+            <Input label="Location" placeholder="e.g. Remote" error={errors.location?.message} {...register('location')} />
+            <Input label="Experience Required" placeholder="e.g. 3+ years" error={errors.experienceRequired?.message} {...register('experienceRequired')} />
+          </div>
+          <Select label="Employment Type" options={EMP_TYPE_OPTIONS} error={errors.employmentType?.message} {...register('employmentType')} />
+          <Textarea label="Job Description" rows={8} placeholder="Describe responsibilities, requirements…" error={errors.description?.message} {...register('description')} />
         </div>
       </Modal>
 

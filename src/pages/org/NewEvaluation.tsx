@@ -205,7 +205,7 @@ export function NewEvaluationPage() {
               jobTitle: selectedJob.title,
               score: response.score,
               label: response.label,
-              orgName: user?.organizationName ?? 'ATS Scanner',
+              orgName: user?.organizationName ?? 'Resume Screener',
               logoUrl: user?.organizationLogo,
               appUrl: `${window.location.origin}${window.location.pathname}#/org/evaluations`,
             }),

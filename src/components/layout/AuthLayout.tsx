@@ -19,7 +19,7 @@ export function AuthLayout() {
             <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="text-white font-semibold text-lg">ATS Scorer</span>
+            <span className="text-white font-semibold text-lg">Resume Screener</span>
           </div>
         </div>
 
@@ -47,7 +47,7 @@ export function AuthLayout() {
         </div>
 
         <div className="relative text-white/40 text-xs">
-          © 2026 ATS Scorer. All rights reserved.
+          © 2026 Resume Screener. All rights reserved.
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export function AuthLayout() {
             <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="text-slate-900 dark:text-slate-100 font-semibold">ATS Scorer</span>
+            <span className="text-slate-900 dark:text-slate-100 font-semibold">Resume Screener</span>
           </div>
           <div className="lg:ml-auto">
             <ThemeToggle />

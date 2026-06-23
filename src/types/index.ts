@@ -106,10 +106,13 @@ export interface Job {
   updatedAt: string
 }
 
-// New style: paste a full JD; title + type are extracted from the text.
 export interface CreateJobPayload {
+  title: string
+  department: string
+  location: string
+  experienceRequired: string
+  employmentType: EmploymentType
   description: string
-  title?: string
   jobType?: string
   organizationName?: string
 }

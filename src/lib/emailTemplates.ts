@@ -65,16 +65,16 @@ export interface EmailContent { subject: string; html: string }
 // ─── Welcome (signup) ─────────────────────────────────────────────────────────
 export function welcomeEmail(o: { name: string; orgName: string; logoUrl?: string; appUrl: string }): EmailContent {
   return {
-    subject: `Welcome to ${o.orgName} on ATS Scanner`,
+    subject: `Welcome to ${o.orgName} on Resume Screener`,
     html: emailLayout({
       brand: o.orgName,
       logoUrl: o.logoUrl,
       greeting: `Hi ${o.name},`,
       heading: 'Your account is ready',
-      preheader: `Welcome to ${o.orgName} on ATS Scanner`,
-      bodyHtml: `<p style="margin:0 0 14px;">Welcome aboard! Your <strong>${o.orgName}</strong> workspace on ATS Scanner is all set up.</p>
+      preheader: `Welcome to ${o.orgName} on Resume Screener`,
+      bodyHtml: `<p style="margin:0 0 14px;">Welcome aboard! Your <strong>${o.orgName}</strong> workspace on Resume Screener is all set up.</p>
                  <p style="margin:0;">You can start uploading resumes and running AI-powered evaluations right away.</p>`,
-      ctaLabel: 'Open ATS Scanner',
+      ctaLabel: 'Open Resume Screener',
       ctaUrl: o.appUrl,
       fallbackUrl: o.appUrl,
     }),
@@ -85,13 +85,13 @@ export function welcomeEmail(o: { name: string; orgName: string; logoUrl?: strin
 export function inviteEmail(o: { orgName: string; role: 'org_admin' | 'recruiter'; acceptUrl: string; logoUrl?: string }): EmailContent {
   const roleLabel = o.role === 'org_admin' ? 'Admin' : 'Recruiter'
   return {
-    subject: `You're invited to join ${o.orgName} on ATS Scanner`,
+    subject: `You're invited to join ${o.orgName} on Resume Screener`,
     html: emailLayout({
       brand: o.orgName,
       logoUrl: o.logoUrl,
       heading: `Join ${o.orgName}`,
       preheader: `You've been invited as ${roleLabel}`,
-      bodyHtml: `<p style="margin:0 0 14px;">You've been invited to join <strong>${o.orgName}</strong> on ATS Scanner as <strong>${roleLabel}</strong>.</p>
+      bodyHtml: `<p style="margin:0 0 14px;">You've been invited to join <strong>${o.orgName}</strong> on Resume Screener as <strong>${roleLabel}</strong>.</p>
                  <p style="margin:0;">Click the button below to set your password and access your account. This link is valid for the next 24 hours.</p>`,
       ctaLabel: 'Accept invitation and set password',
       ctaUrl: o.acceptUrl,

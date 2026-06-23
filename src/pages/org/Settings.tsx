@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Save, Building2, User, Bell, Palette, Sun, Moon, Monitor, CheckCircle, UserCog, Cpu, RotateCcw } from 'lucide-react'
+import { Save, Building2, Sun, Moon, Monitor, CheckCircle, RotateCcw } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardHeader, Button, Input, Select, Textarea, Toggle } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
@@ -12,7 +12,6 @@ import { TeamMembersPage } from '@/pages/org/TeamMembers'
 import { cn } from '@/lib/utils'
 import type { NotificationPreferences } from '@/types'
 
-type Tab = 'profile' | 'team' | 'notifications' | 'appearance' | 'model' | 'organization'
 
 const NOTIFICATION_ITEMS: { key: keyof NotificationPreferences; label: string; description: string }[] = [
   { key: 'evaluationCompleted', label: 'Evaluation completed', description: 'Email me when an ATS evaluation finishes' },
@@ -22,55 +21,35 @@ const NOTIFICATION_ITEMS: { key: keyof NotificationPreferences; label: string; d
   { key: 'productUpdates', label: 'Product updates', description: 'Occasional news about new features' },
 ]
 
-export function OrgSettings() {
-  const { user, updateUser } = useAuthStore()
-  const isAdmin = user?.role === 'org_admin'
-  const [tab, setTab] = useState<Tab>('profile')
-
-  const tabs: { key: Tab; label: string; icon: typeof User }[] = [
-    { key: 'profile', label: 'Profile', icon: User },
-    { key: 'team', label: 'Team Members', icon: UserCog },
-    { key: 'notifications', label: 'Notifications', icon: Bell },
-    { key: 'appearance', label: 'Appearance', icon: Palette },
-    { key: 'model', label: 'Model', icon: Cpu },
-    { key: 'organization', label: 'Organization', icon: Building2 },
-  ]
-
+// Full-page wrapper for each settings section (loaded on its own route).
+function SettingsSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <div>
-      <PageHeader title="Settings" description="Manage your account, preferences, and organization" />
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Tab nav */}
-        <nav className="lg:w-52 shrink-0 flex lg:flex-col gap-1 overflow-x-auto">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-                tab === t.key
-                  ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              )}
-            >
-              <t.icon className="w-4 h-4" />
-              {t.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex-1 max-w-2xl">
-          {tab === 'profile' && <ProfileTab user={user} updateUser={updateUser} />}
-          {tab === 'team' && <Card><TeamMembersPage embedded /></Card>}
-          {tab === 'notifications' && <NotificationsTab />}
-          {tab === 'appearance' && <AppearanceTab />}
-          {tab === 'model' && <ModelTab />}
-          {tab === 'organization' && <OrganizationTab isAdmin={isAdmin} orgName={user?.organizationName ?? ''} />}
-        </div>
-      </div>
+      <PageHeader title={title} description={description} />
+      <div className="max-w-3xl">{children}</div>
     </div>
   )
+}
+
+export function SettingsProfilePage() {
+  const { user, updateUser } = useAuthStore()
+  return <SettingsSection title="Profile" description="Update your personal information"><ProfileTab user={user} updateUser={updateUser} /></SettingsSection>
+}
+export function SettingsTeamPage() {
+  return <SettingsSection title="Team Members" description="Manage who has access to your organization"><Card><TeamMembersPage embedded /></Card></SettingsSection>
+}
+export function SettingsNotificationsPage() {
+  return <SettingsSection title="Notifications" description="Choose what we email you about"><NotificationsTab /></SettingsSection>
+}
+export function SettingsAppearancePage() {
+  return <SettingsSection title="Appearance" description="Customize how the app looks"><AppearanceTab /></SettingsSection>
+}
+export function SettingsModelPage() {
+  return <SettingsSection title="Model" description="The AI endpoint used to score resumes"><ModelTab /></SettingsSection>
+}
+export function SettingsOrganizationPage() {
+  const { user } = useAuthStore()
+  return <SettingsSection title="Organization" description="Manage your organization profile"><OrganizationTab isAdmin={user?.role === 'org_admin'} orgName={user?.organizationName ?? ''} /></SettingsSection>
 }
 
 // ─── Profile (#2) ───────────────────────────────────────────────────────────

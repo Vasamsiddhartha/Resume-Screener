@@ -6,11 +6,11 @@ import { Save } from 'lucide-react'
 export function SuperAdminSettings() {
   const { register, handleSubmit } = useForm({
     defaultValues: {
-      platformName: 'ATS Scorer',
+      platformName: 'Resume Screener',
       supportEmail: 'support@atsscorer.io',
       maxOrgsPerPlan: '100',
       huggingFaceModel: 'username/ats-scorer-model',
-      welcomeMessage: 'Welcome to ATS Scorer — the AI-powered resume screening platform.',
+      welcomeMessage: 'Welcome to Resume Screener — the AI-powered resume screening platform.',
     },
   })
 

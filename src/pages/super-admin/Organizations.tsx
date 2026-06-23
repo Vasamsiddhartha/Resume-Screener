@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Search, MoreHorizontal, Ban, Trash2, CheckCircle } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Ban, Trash2, CheckCircle, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button, Input, Select, Modal, ConfirmModal, Card, Badge, Spinner } from '@/components/ui'
 import { organizationService } from '@/services/organization.service'
@@ -25,12 +25,27 @@ const PLAN_OPTIONS = [
   { value: 'enterprise', label: 'Enterprise — $499/mo' },
 ]
 
+const STATUS_EDIT_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
+const editSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter a valid email'),
+  plan: z.enum(['free', 'starter', 'professional', 'enterprise']),
+  status: z.enum(['active', 'suspended', 'inactive']),
+})
+type EditFormData = z.infer<typeof editSchema>
+
 export function OrganizationsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null)
+  const [editTarget, setEditTarget] = useState<Organization | null>(null)
   const [actionMenu, setActionMenu] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
@@ -70,6 +85,27 @@ export function OrganizationsPage() {
     resolver: zodResolver(schema),
     defaultValues: { plan: 'starter' },
   })
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: EditFormData }) => organizationService.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] })
+      setEditTarget(null)
+    },
+  })
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
+
+  function openEdit(org: Organization) {
+    resetEdit({ name: org.name, email: org.email, plan: org.plan, status: org.status })
+    setEditTarget(org)
+    setActionMenu(null)
+  }
 
   const planBadgeVariant: Record<string, 'default' | 'info' | 'purple' | 'warning'> = {
     free: 'default',
@@ -166,6 +202,12 @@ export function OrganizationsPage() {
                     </button>
                     {actionMenu === org.id && (
                       <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-20">
+                        <button
+                          onClick={() => openEdit(org)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                          <Pencil className="w-4 h-4" /> Edit details
+                        </button>
                         {org.status === 'active' ? (
                           <button
                             onClick={() => { suspendMutation.mutate(org.id); setActionMenu(null) }}
@@ -231,6 +273,32 @@ export function OrganizationsPage() {
           <Input label="Organization Name" placeholder="Acme Corp" error={errors.name?.message} {...register('name')} />
           <Input label="Admin Email" type="email" placeholder="admin@acme.com" error={errors.email?.message} {...register('email')} />
           <Select label="Subscription Plan" options={PLAN_OPTIONS} error={errors.plan?.message} {...register('plan')} />
+        </div>
+      </Modal>
+
+      {/* Edit Modal — full management of details, subscription, and status */}
+      <Modal
+        isOpen={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        title="Manage Organization"
+        description={editTarget ? `Update details and subscription for ${editTarget.name}` : ''}
+        footer={
+          <div className="flex gap-3 justify-end pt-4">
+            <Button variant="secondary" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button
+              onClick={handleSubmitEdit(d => editTarget && editMutation.mutate({ id: editTarget.id, payload: d }))}
+              isLoading={editMutation.isPending}
+            >
+              Save changes
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <Input label="Organization Name" error={editErrors.name?.message} {...registerEdit('name')} />
+          <Input label="Admin Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
+          <Select label="Subscription Plan" options={PLAN_OPTIONS} error={editErrors.plan?.message} {...registerEdit('plan')} />
+          <Select label="Status" options={STATUS_EDIT_OPTIONS} error={editErrors.status?.message} {...registerEdit('status')} />
         </div>
       </Modal>
 

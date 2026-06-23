@@ -11,6 +11,7 @@ interface StatCardProps {
   iconBg?: string
   description?: string
   className?: string
+  compact?: boolean
 }
 
 export function StatCard({
@@ -23,20 +24,22 @@ export function StatCard({
   iconBg = 'bg-violet-100 dark:bg-violet-900/30',
   description,
   className,
+  compact = false,
 }: StatCardProps) {
   return (
     <div
       className={cn(
-        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl',
+        compact ? 'p-3' : 'p-5',
         className
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {title}
           </p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1 leading-none">
+          <p className={cn('font-bold text-slate-900 dark:text-slate-100 mt-1 leading-none', compact ? 'text-xl' : 'text-2xl')}>
             {value}
           </p>
           {(change || description) && (
@@ -59,8 +62,8 @@ export function StatCard({
             </div>
           )}
         </div>
-        <div className={cn('p-3 rounded-xl shrink-0', iconBg)}>
-          <Icon className={cn('w-5 h-5', iconColor)} />
+        <div className={cn('rounded-xl shrink-0', iconBg, compact ? 'p-2' : 'p-3')}>
+          <Icon className={cn(compact ? 'w-4 h-4' : 'w-5 h-5', iconColor)} />
         </div>
       </div>
     </div>

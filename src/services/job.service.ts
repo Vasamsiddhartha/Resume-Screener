@@ -50,8 +50,11 @@ export const jobService = {
       const { data, error } = await supabase.from('jobs').insert({
         organization_id: orgId,
         organization_name: payload.organizationName ?? null,
-        title: payload.title ?? 'Untitled role',
-        job_type: payload.jobType ?? null,
+        title: payload.title,
+        department: payload.department,
+        location: payload.location,
+        experience_required: payload.experienceRequired,
+        employment_type: payload.employmentType,
         description: payload.description,
         status: 'active',
       }).select().single()
@@ -64,12 +67,11 @@ export const jobService = {
       id: generateId(),
       organizationId: orgId,
       organizationName: payload.organizationName,
-      title: payload.title ?? 'Untitled role',
-      jobType: payload.jobType,
-      department: '',
-      location: '',
-      experienceRequired: '',
-      employmentType: 'full_time',
+      title: payload.title,
+      department: payload.department,
+      location: payload.location,
+      experienceRequired: payload.experienceRequired,
+      employmentType: payload.employmentType,
       description: payload.description,
       status: 'active',
       candidateCount: 0,
@@ -84,7 +86,10 @@ export const jobService = {
     if (supabase) {
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
       if (payload.title !== undefined) patch.title = payload.title
-      if (payload.jobType !== undefined) patch.job_type = payload.jobType
+      if (payload.department !== undefined) patch.department = payload.department
+      if (payload.location !== undefined) patch.location = payload.location
+      if (payload.experienceRequired !== undefined) patch.experience_required = payload.experienceRequired
+      if (payload.employmentType !== undefined) patch.employment_type = payload.employmentType
       if (payload.description !== undefined) patch.description = payload.description
       if (payload.status !== undefined) patch.status = payload.status
       const { data, error } = await supabase.from('jobs').update(patch).eq('id', id).select().single()

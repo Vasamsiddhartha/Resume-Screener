@@ -30,12 +30,21 @@ export function SignUpPage() {
     resolver: zodResolver(schema),
   })
 
+  async function enterApp() {
+    const user = await buildUserFromSupabase()
+    if (user) {
+      setAuth(user, 'supabase')
+      navigate((user.memberships?.length ?? 0) > 1 ? '/select-organization' : '/org/dashboard')
+    } else {
+      navigate('/login')
+    }
+  }
+
   async function onSubmit(data: FormData) {
     setServerError('')
     try {
       const { needsConfirmation } = await supabaseAuth.signUp(data)
 
-      // Send our own welcome email (your mail integration), never blocking signup
       mailService.send({
         to: data.email,
         ...welcomeEmail({
@@ -49,22 +58,28 @@ export function SignUpPage() {
         setConfirmSent(true)
         return
       }
-      // Confirmation disabled — we're signed in; load the user and enter the app
-      const user = await buildUserFromSupabase()
-      if (user) {
-        setAuth(user, 'supabase')
-        navigate('/org/dashboard')
-      } else {
-        navigate('/login')
-      }
+      await enterApp()
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Sign up failed'
-      // Friendlier message for the common duplicate-email case
+      // Existing email → create ANOTHER organization for that account.
+      // If the password matches, sign in and spin up the new org; otherwise ask them to use their real password.
       if (/already registered|already exists|user_already_exists/i.test(raw)) {
-        setServerError('An account with this email already exists. Try signing in instead.')
-      } else {
-        setServerError(raw)
+        try {
+          await supabaseAuth.signIn(data.email, data.password) // throws if password is wrong
+          await supabaseAuth.createOrganization(data.orgName)
+          await enterApp()
+          return
+        } catch (signInErr) {
+          const m = signInErr instanceof Error ? signInErr.message : ''
+          setServerError(
+            /invalid login|invalid credentials/i.test(m)
+              ? 'This email already has an account. Enter that account’s password to add a new organization to it.'
+              : (m || 'Could not create organization for the existing account')
+          )
+          return
+        }
       }
+      setServerError(raw)
     }
   }
 

@@ -11,8 +11,8 @@
 
 const MAIL_API_URL = import.meta.env.VITE_MAIL_API_URL ?? ''
 const MAIL_FROM = import.meta.env.VITE_MAIL_FROM ?? ''
-// Sender display name (the "From" name recipients see). Defaults to ATS Scanner.
-const MAIL_FROM_NAME = import.meta.env.VITE_MAIL_FROM_NAME ?? 'ATS Scanner'
+// Sender display name (the "From" name recipients see). Defaults to Resume Screener.
+const MAIL_FROM_NAME = import.meta.env.VITE_MAIL_FROM_NAME ?? 'Resume Screener'
 
 // EmailJS — works from the browser (CORS-friendly), no backend needed.
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID ?? ''

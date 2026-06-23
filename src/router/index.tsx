@@ -29,7 +29,10 @@ import { OrgAnalytics } from '@/pages/org/Analytics'
 import { PipelinePage } from '@/pages/org/Pipeline'
 import { NotificationsPage } from '@/pages/NotificationsPage'
 import { TeamMembersPage } from '@/pages/org/TeamMembers'
-import { OrgSettings } from '@/pages/org/Settings'
+import {
+  SettingsProfilePage, SettingsTeamPage, SettingsNotificationsPage,
+  SettingsAppearancePage, SettingsModelPage, SettingsOrganizationPage,
+} from '@/pages/org/Settings'
 
 export const router = createHashRouter([
   {
@@ -86,7 +89,13 @@ export const router = createHashRouter([
           { path: 'org/analytics', element: <OrgAnalytics /> },
           { path: 'org/team', element: <TeamMembersPage /> },
           { path: 'org/notifications', element: <NotificationsPage /> },
-          { path: 'org/settings', element: <OrgSettings /> },
+          { path: 'org/settings', element: <Navigate to="/org/settings/profile" replace /> },
+          { path: 'org/settings/profile', element: <SettingsProfilePage /> },
+          { path: 'org/settings/team', element: <SettingsTeamPage /> },
+          { path: 'org/settings/notifications', element: <SettingsNotificationsPage /> },
+          { path: 'org/settings/appearance', element: <SettingsAppearancePage /> },
+          { path: 'org/settings/model', element: <SettingsModelPage /> },
+          { path: 'org/settings/organization', element: <SettingsOrganizationPage /> },
         ],
       },
     ],

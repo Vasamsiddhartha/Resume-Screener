@@ -48,7 +48,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-semibold text-slate-900 dark:text-slate-100">ATS Scorer</span>
+          <span className="font-semibold text-slate-900 dark:text-slate-100">Resume Screener</span>
           <span className="ml-auto text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
             Super Admin
           </span>

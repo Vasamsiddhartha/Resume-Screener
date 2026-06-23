@@ -55,6 +55,11 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['team'] }); setRemoveTarget(null) },
   })
 
+  const roleMutation = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: 'org_admin' | 'recruiter' }) => teamService.updateRole(id, role),
+    onSuccess: (_d, vars) => { notify('team', 'Role updated', `Changed to ${vars.role === 'org_admin' ? 'Admin' : 'Recruiter'}`); queryClient.invalidateQueries({ queryKey: ['team'] }) },
+  })
+
   return (
     <div>
       {embedded ? (
@@ -108,6 +113,19 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{member.email}</p>
                 </div>
+
+                {/* Editable role (admins, active members other than self) */}
+                {isAdmin && member.isActive && member.id !== user?.id && (
+                  <Select
+                    className="w-32 shrink-0"
+                    options={[
+                      { value: 'recruiter', label: 'Recruiter' },
+                      { value: 'org_admin', label: 'Admin' },
+                    ]}
+                    value={member.role}
+                    onChange={e => roleMutation.mutate({ id: member.id, role: e.target.value as 'org_admin' | 'recruiter' })}
+                  />
+                )}
 
                 <div className="hidden sm:flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 shrink-0">
                   {member.isActive ? (

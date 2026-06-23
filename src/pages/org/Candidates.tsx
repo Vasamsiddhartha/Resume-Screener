@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Search, UserPlus, Users, Trash2 } from 'lucide-react'
+import { Search, UserPlus, Users, Trash2, Folder, ChevronDown } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -43,6 +43,7 @@ export function CandidatesPage() {
   const [labelFilter, setLabelFilter] = useState('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidates', orgId, search, statusFilter, jobFilter, labelFilter],
@@ -134,59 +135,75 @@ export function CandidatesPage() {
 
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
+        ) : (data?.data.length ?? 0) === 0 ? (
+          <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
+            <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            No candidates found
+          </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {data?.data.length === 0 ? (
-              <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
-                <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                No candidates found
-              </div>
-            ) : (
-              data?.data.map(c => (
-                <div key={c.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
-                  {/* Score ring */}
-                  {c.latestScore !== undefined ? (
-                    <CircularProgress score={c.latestScore} size="sm" />
-                  ) : (
-                    <div className="w-20 h-20 flex items-center justify-center">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                        <span className="text-xs text-slate-400">N/A</span>
+            {Object.entries(
+              (data?.data ?? []).reduce<Record<string, Candidate[]>>((acc, c) => {
+                const key = c.appliedJobTitle?.trim() || 'No Job Title'
+                ;(acc[key] ||= []).push(c)
+                return acc
+              }, {})
+            )
+              .sort((a, b) => (a[0] === 'No Job Title' ? 1 : b[0] === 'No Job Title' ? -1 : a[0].localeCompare(b[0])))
+              .map(([jobTitle, list]) => {
+                const isCollapsed = collapsed[jobTitle]
+                return (
+                  <div key={jobTitle}>
+                    {/* Folder header */}
+                    <button
+                      onClick={() => setCollapsed(s => ({ ...s, [jobTitle]: !s[jobTitle] }))}
+                      className="w-full flex items-center gap-3 px-5 py-3 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors"
+                    >
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                      <Folder className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0" />
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{jobTitle}</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500 bg-slate-200/70 dark:bg-slate-700/70 rounded-full px-2 py-0.5">{list.length}</span>
+                    </button>
+
+                    {/* Candidates in this folder */}
+                    {!isCollapsed && list.map(c => (
+                      <div key={c.id} className="flex items-center gap-4 px-5 py-4 pl-12 border-t border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
+                        {c.latestScore !== undefined ? (
+                          <CircularProgress score={c.latestScore} size="sm" />
+                        ) : (
+                          <div className="w-20 h-20 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                              <span className="text-xs text-slate-400">N/A</span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{c.name}</p>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${getStatusColor(c.status)}`}>{c.status}</span>
+                            {c.latestLabel && (
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(c.latestLabel as ATSLabel)}`}>{c.latestLabel}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <span>{c.email}</span>
+                            {c.phone && <><span>·</span><span>{c.phone}</span></>}
+                          </div>
+                        </div>
+                        <div className="hidden md:block text-right shrink-0">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">{formatDate(c.createdAt)}</p>
+                        </div>
+                        <button
+                          onClick={() => setDeleteTarget(c)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{c.name}</p>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${getStatusColor(c.status)}`}>
-                        {c.status}
-                      </span>
-                      {c.latestLabel && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(c.latestLabel as ATSLabel)}`}>
-                          {c.latestLabel}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span>{c.email}</span>
-                      {c.phone && <><span>·</span><span>{c.phone}</span></>}
-                      {c.appliedJobTitle && <><span>·</span><span>{c.appliedJobTitle}</span></>}
-                    </div>
+                    ))}
                   </div>
-
-                  <div className="hidden md:block text-right shrink-0">
-                    <p className="text-xs text-slate-400 dark:text-slate-500">{formatDate(c.createdAt)}</p>
-                  </div>
-
-                  <button
-                    onClick={() => setDeleteTarget(c)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
+                )
+              })}
           </div>
         )}
       </Card>

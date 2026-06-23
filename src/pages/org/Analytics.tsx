@@ -88,15 +88,15 @@ export function OrgAnalytics() {
       <PageHeader title="Analytics" description="Job engagement and hiring funnel across your organization" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <StatCard title="Active Jobs" value={jobs.filter(j => j.status === 'active').length} icon={Briefcase}
+        <StatCard compact title="Active Jobs" value={jobs.filter(j => j.status === 'active').length} icon={Briefcase}
           iconColor="text-violet-600 dark:text-violet-400" iconBg="bg-violet-100 dark:bg-violet-900/30" />
-        <StatCard title="Candidates" value={totalCandidates} icon={Users}
+        <StatCard compact title="Candidates" value={totalCandidates} icon={Users}
           iconColor="text-blue-600 dark:text-blue-400" iconBg="bg-blue-100 dark:bg-blue-900/30" />
-        <StatCard title="Evaluations" value={totalEvaluations} icon={FileSearch}
+        <StatCard compact title="Evaluations" value={totalEvaluations} icon={FileSearch}
           iconColor="text-emerald-600 dark:text-emerald-400" iconBg="bg-emerald-100 dark:bg-emerald-900/30" />
-        <StatCard title="Shortlisted" value={totalShortlisted} icon={Star}
+        <StatCard compact title="Shortlisted" value={totalShortlisted} icon={Star}
           iconColor="text-amber-600 dark:text-amber-400" iconBg="bg-amber-100 dark:bg-amber-900/30" />
-        <StatCard title="Shortlist Rate" value={`${shortlistRate.toFixed(0)}%`} description={`avg score ${avgScore.toFixed(1)}`} icon={TrendingUp}
+        <StatCard compact title="Shortlist Rate" value={`${shortlistRate.toFixed(0)}%`} description={`avg score ${avgScore.toFixed(1)}`} icon={TrendingUp}
           iconColor="text-pink-600 dark:text-pink-400" iconBg="bg-pink-100 dark:bg-pink-900/30" />
       </div>
 
