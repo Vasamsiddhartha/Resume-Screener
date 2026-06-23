@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
-import { Zap } from 'lucide-react'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 
 export function AuthLayout() {
   return (
@@ -15,12 +15,7 @@ export function AuthLayout() {
         </div>
 
         <div className="relative">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-white font-semibold text-lg">Resume Screener</span>
-          </div>
+          <BrandLogo imgClassName="w-10 h-10" nameClassName="text-white font-semibold text-lg" />
         </div>
 
         <div className="relative">
@@ -54,12 +49,7 @@ export function AuthLayout() {
       {/* Right panel — form */}
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-6">
-          <div className="flex items-center gap-2 lg:hidden">
-            <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-slate-900 dark:text-slate-100 font-semibold">Resume Screener</span>
-          </div>
+          <BrandLogo className="lg:hidden" imgClassName="w-7 h-7" />
           <div className="lg:ml-auto">
             <ThemeToggle />
           </div>

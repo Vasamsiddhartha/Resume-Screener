@@ -35,7 +35,7 @@ export function SubscriptionPlansPage() {
               </div>
             </div>
 
-            <div className="space-y-1 mb-5 text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div className="space-y-1 mb-5 text-xs text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-white/[0.06] pb-4">
               <p>{plan.limits.users === -1 ? 'Unlimited users' : `Up to ${plan.limits.users} users`}</p>
               <p>{plan.limits.jobs === -1 ? 'Unlimited jobs' : `Up to ${plan.limits.jobs} jobs`}</p>
               <p>
@@ -64,7 +64,7 @@ export function SubscriptionPlansPage() {
         ))}
       </div>
 
-      <div className="mt-8 p-5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="mt-8 p-5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/[0.06]">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">Revenue Summary</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[

@@ -34,7 +34,7 @@ export function UsersPage() {
       <PageHeader title="Users" description="All users across all organizations" />
 
       <Card padding="none">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Search users…"
             leftIcon={<Search className="w-4 h-4" />}
@@ -50,7 +50,7 @@ export function UsersPage() {
           />
         </div>
 
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
           {filtered.length === 0 ? (
             <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">No users found</div>
           ) : (

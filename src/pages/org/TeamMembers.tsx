@@ -90,7 +90,7 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {members.map(member => (
               <div key={member.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
                 <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">

@@ -112,10 +112,10 @@ export function SuperAdminDashboard() {
       </div>
 
       <Card padding="none">
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800">
+        <div className="p-5 border-b border-slate-100 dark:border-white/[0.06]">
           <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Recent Organizations</h3>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
           {MOCK_ORGANIZATIONS.slice(0, 5).map(org => (
             <div key={org.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">

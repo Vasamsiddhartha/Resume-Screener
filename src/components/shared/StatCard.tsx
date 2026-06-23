@@ -29,7 +29,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.06] rounded-xl',
         compact ? 'p-3' : 'p-5',
         className
       )}

@@ -129,7 +129,7 @@ export function ATSEvaluationsPage() {
       )}
 
       <Card padding="none">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Search by candidate or job…"
             leftIcon={<Search className="w-4 h-4" />}
@@ -154,7 +154,7 @@ export function ATSEvaluationsPage() {
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {data?.data.length === 0 ? (
               <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
                 <FileSearch className="w-10 h-10 mx-auto mb-3 opacity-30" />

@@ -127,7 +127,7 @@ export function OrganizationsPage() {
       />
 
       <Card padding="none">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Search organizations…"
             leftIcon={<Search className="w-4 h-4" />}
@@ -151,7 +151,7 @@ export function OrganizationsPage() {
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {data?.data.length === 0 ? (
               <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
                 No organizations found
@@ -239,7 +239,7 @@ export function OrganizationsPage() {
         )}
 
         {data && data.total > 10 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400">
             <span>Showing {data.data.length} of {data.total}</span>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>

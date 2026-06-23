@@ -151,14 +151,14 @@ export function OrgDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Evaluations */}
         <Card padding="none">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-white/[0.06]">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Recent Evaluations</h3>
             <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               onClick={() => navigate('/org/evaluations')}>
               View all
             </Button>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {recentEvals.length === 0 && (
               <div className="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                 No evaluations yet
@@ -181,14 +181,14 @@ export function OrgDashboard() {
 
         {/* Top Candidates */}
         <Card padding="none">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-white/[0.06]">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Top Candidates</h3>
             <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               onClick={() => navigate('/org/candidates')}>
               View all
             </Button>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {topCandidates.length === 0 && (
               <div className="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                 No scored candidates yet

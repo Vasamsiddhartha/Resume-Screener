@@ -55,7 +55,7 @@ export function NotificationsPage() {
         </Card>
       ) : (
         <Card padding="none">
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {items.map(n => {
               const Icon = ICONS[n.type] ?? Info
               return (

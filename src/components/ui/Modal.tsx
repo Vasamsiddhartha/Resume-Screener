@@ -53,7 +53,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
         )}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className="flex items-start justify-between p-6 border-b border-slate-100 dark:border-white/[0.06] shrink-0">
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
             {description && (
@@ -68,7 +68,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
         <div className="flex-1 overflow-y-auto p-6">{children}</div>
 
         {footer && (
-          <div className="p-6 pt-0 border-t border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="p-6 pt-0 border-t border-slate-100 dark:border-white/[0.06] shrink-0">
             {footer}
           </div>
         )}
