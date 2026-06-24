@@ -113,12 +113,19 @@ export function PipelinePage() {
         description="Drag candidates across stages. Drop into Evaluated to run an ATS evaluation."
         action={
           addingOpen ? (
-            <div className="flex items-center gap-2">
-              <Input autoFocus placeholder="Stage name…" value={newStage} className="h-9 w-44"
-                onChange={e => setNewStage(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && newStage.trim()) addStageMutation.mutate(newStage.trim()) }} />
-              <Button size="sm" isLoading={addStageMutation.isPending} disabled={!newStage.trim()} onClick={() => addStageMutation.mutate(newStage.trim())}>Add</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setAddingOpen(false); setNewStage('') }}>Cancel</Button>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
+                <Input autoFocus placeholder="Stage name…" value={newStage} className="h-9 w-44"
+                  onChange={e => setNewStage(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && newStage.trim()) addStageMutation.mutate(newStage.trim()) }} />
+                <Button size="sm" isLoading={addStageMutation.isPending} disabled={!newStage.trim()} onClick={() => addStageMutation.mutate(newStage.trim())}>Add</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setAddingOpen(false); setNewStage('') }}>Cancel</Button>
+              </div>
+              {addStageMutation.error && (
+                <p className="text-xs text-red-600 dark:text-red-400 max-w-xs text-right">
+                  {addStageMutation.error instanceof Error ? addStageMutation.error.message : 'Could not add stage'}
+                </p>
+              )}
             </div>
           ) : (
             <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setAddingOpen(true)}>Add Stage</Button>

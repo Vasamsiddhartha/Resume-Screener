@@ -39,7 +39,10 @@ export const pipelineService = {
         .insert({ organization_id: orgId, name: name.trim(), position })
         .select()
         .single()
-      if (error) throw error
+      if (error) {
+        console.error('[pipeline] createStage failed:', error)
+        throw new Error(error.message || 'Could not add stage — is migration 0010/0011 applied?')
+      }
       return mapStage(data)
     }
     const stage: PipelineStage = { id: generateId(), organizationId: orgId, name: name.trim(), position, createdAt: new Date().toISOString() }
