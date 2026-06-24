@@ -15,6 +15,7 @@ import { mailService } from '@/services/mail.service'
 import { evaluationEmail } from '@/lib/emailTemplates'
 import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
+import { extractContact } from '@/lib/extractContact'
 import type { ATSResponsePayload } from '@/types'
 
 type Step = 'upload' | 'select-job' | 'review' | 'result'
@@ -40,6 +41,7 @@ export function NewEvaluationPage() {
   const [selectedJobId, setSelectedJobId] = useState('')
   const [candidateName, setCandidateName] = useState('')
   const [candidateEmail, setCandidateEmail] = useState('')
+  const [autoFilled, setAutoFilled] = useState<{ name: boolean; email: boolean }>({ name: false, email: false })
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [result, setResult] = useState<ATSResponsePayload | null>(null)
   const [evalError, setEvalError] = useState('')
@@ -55,6 +57,19 @@ export function NewEvaluationPage() {
 
   const activeJobs = jobsData?.data ?? []
   const selectedJob = activeJobs.find(j => j.id === selectedJobId)
+
+  // Set the resume text AND auto-fill candidate name/email from it. Only fills
+  // fields the user hasn't already typed into — never clobbers a manual edit.
+  function applyResumeText(text: string) {
+    setResumeText(text)
+    if (!text.trim()) return
+    const { name, email } = extractContact(text)
+    const fillName = !candidateName.trim() && !!name
+    const fillEmail = !candidateEmail.trim() && !!email
+    if (fillName) setCandidateName(name!)
+    if (fillEmail) setCandidateEmail(email!)
+    setAutoFilled({ name: fillName, email: fillEmail })
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -83,7 +98,7 @@ export function NewEvaluationPage() {
     // Plain text — read directly
     if (isText) {
       const reader = new FileReader()
-      reader.onload = (evt) => setResumeText((evt.target?.result as string) ?? '')
+      reader.onload = (evt) => applyResumeText((evt.target?.result as string) ?? '')
       reader.readAsText(file)
       return
     }
@@ -110,7 +125,7 @@ export function NewEvaluationPage() {
           )
           return
         }
-        setResumeText(text)
+        applyResumeText(text)
       } catch (err) {
         console.error('[Resume Extraction]', err)
         const label = isPdf ? 'PDF' : 'document'
@@ -127,7 +142,7 @@ export function NewEvaluationPage() {
 
     // Unknown type — fall back to a plain-text read attempt
     const reader = new FileReader()
-    reader.onload = (evt) => setResumeText((evt.target?.result as string) ?? '')
+    reader.onload = (evt) => applyResumeText((evt.target?.result as string) ?? '')
     reader.readAsText(file)
   }
 
@@ -231,6 +246,7 @@ export function NewEvaluationPage() {
     setSelectedJobId('')
     setCandidateName('')
     setCandidateEmail('')
+    setAutoFilled({ name: false, email: false })
     setResult(null)
     setResumeFile(null)
     setEvalError('')
@@ -346,7 +362,7 @@ export function NewEvaluationPage() {
               placeholder="Paste resume text here…"
               rows={10}
               value={resumeText}
-              onChange={e => setResumeText(e.target.value)}
+              onChange={e => applyResumeText(e.target.value)}
               className="font-mono text-xs"
             />
 
@@ -430,20 +446,30 @@ export function NewEvaluationPage() {
             </p>
 
             <div className="space-y-4">
+              {(autoFilled.name || autoFilled.email) && (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                    We auto-filled the candidate details from the resume — please double-check and edit if needed.
+                  </p>
+                </div>
+              )}
               {/* Candidate details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Candidate Name *"
                   placeholder="Jane Doe"
+                  hint={autoFilled.name ? 'Auto-detected from resume' : undefined}
                   value={candidateName}
-                  onChange={e => setCandidateName(e.target.value)}
+                  onChange={e => { setCandidateName(e.target.value); setAutoFilled(a => ({ ...a, name: false })) }}
                 />
                 <Input
                   label="Candidate Email"
                   type="email"
                   placeholder="jane@email.com (optional)"
+                  hint={autoFilled.email ? 'Auto-detected from resume' : undefined}
                   value={candidateEmail}
-                  onChange={e => setCandidateEmail(e.target.value)}
+                  onChange={e => { setCandidateEmail(e.target.value); setAutoFilled(a => ({ ...a, email: false })) }}
                 />
               </div>
 
