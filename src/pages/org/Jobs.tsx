@@ -131,7 +131,7 @@ export function JobsPage() {
       />
 
       <Card padding="none">
-        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row gap-3">
+        <div className="p-4 border-b border-slate-100 dark:border-transparent flex flex-col sm:flex-row gap-3">
           <Input
             placeholder="Search jobs…"
             leftIcon={<Search className="w-4 h-4" />}
@@ -146,7 +146,7 @@ export function JobsPage() {
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
             {data?.data.length === 0 ? (
               <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">No jobs found</div>
             ) : (

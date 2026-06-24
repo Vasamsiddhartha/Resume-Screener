@@ -29,9 +29,9 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'surface-card kpi-gradient rounded-xl bg-white dark:bg-slate-900/80',
-        'border border-slate-200/80 dark:border-white/[0.07]',
-        'transition-colors duration-200 hover:border-slate-300/80 dark:hover:border-white/[0.12]',
+        'surface-card kpi-gradient rounded-xl bg-white dark:bg-slate-900',
+        'border border-slate-200/80 dark:border-transparent',
+        'transition-colors duration-200 hover:border-slate-300/80 dark:hover:bg-slate-800/50',
         compact ? 'p-3' : 'p-5',
         className
       )}

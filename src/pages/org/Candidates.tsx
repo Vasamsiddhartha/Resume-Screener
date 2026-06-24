@@ -122,7 +122,7 @@ export function CandidatesPage() {
       />
 
       <Card padding="none">
-        <div className="p-4 border-b border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row flex-wrap gap-3">
+        <div className="p-4 border-b border-slate-100 dark:border-transparent flex flex-col sm:flex-row flex-wrap gap-3">
           <Input placeholder="Search candidates…" leftIcon={<Search className="w-4 h-4" />}
             className="max-w-xs" value={search} onChange={e => setSearch(e.target.value)} />
           <Select options={jobOptions} className="sm:w-52" value={jobFilter}
@@ -141,7 +141,7 @@ export function CandidatesPage() {
             No candidates found
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+          <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
             {Object.entries(
               (data?.data ?? []).reduce<Record<string, Candidate[]>>((acc, c) => {
                 const key = c.appliedJobTitle?.trim() || 'No Job Title'
@@ -167,7 +167,7 @@ export function CandidatesPage() {
 
                     {/* Candidates in this folder */}
                     {!isCollapsed && list.map(c => (
-                      <div key={c.id} className="flex items-center gap-4 px-5 py-4 pl-12 border-t border-slate-100 dark:border-white/[0.06]/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
+                      <div key={c.id} className="flex items-center gap-4 px-5 py-4 pl-12 border-t border-slate-100 dark:border-transparent/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
                         {c.latestScore !== undefined ? (
                           <CircularProgress score={c.latestScore} size="sm" />
                         ) : (

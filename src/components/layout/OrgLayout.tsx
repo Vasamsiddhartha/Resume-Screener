@@ -69,7 +69,7 @@ function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => 
         </button>
       </div>
       {open && (
-        <div className="mt-0.5 ml-4 pl-3 border-l border-slate-100 dark:border-white/[0.06] space-y-0.5">
+        <div className="mt-0.5 ml-4 pl-3 border-l border-slate-100 dark:border-transparent space-y-0.5">
           {item.children.map(c => (
             <NavLink
               key={c.to}
@@ -110,12 +110,12 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/[0.06] z-40 flex flex-col transition-transform duration-300',
+          'fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-transparent z-40 flex flex-col transition-transform duration-300',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Current organization (static brand — switching lives in the top bar) */}
-        <div className="h-14 flex items-center gap-2 px-3 border-b border-slate-100 dark:border-white/[0.06] shrink-0">
+        <div className="h-14 flex items-center gap-2 px-3 border-b border-slate-100 dark:border-transparent shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {user?.organizationLogo ? (
               <img src={user.organizationLogo} alt={user.organizationName} className="w-7 h-7 rounded-lg object-cover shrink-0 bg-white" />
@@ -134,7 +134,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         </div>
 
         {/* Quick Action */}
-        <div className="px-3 py-3 border-b border-slate-100 dark:border-white/[0.06] shrink-0">
+        <div className="px-3 py-3 border-b border-slate-100 dark:border-transparent shrink-0">
           <button
             onClick={() => { navigate('/org/evaluations/new'); onClose() }}
             className="w-full flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
@@ -171,7 +171,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         </nav>
 
         {/* User */}
-        <div className="p-3 border-t border-slate-100 dark:border-white/[0.06] shrink-0">
+        <div className="p-3 border-t border-slate-100 dark:border-transparent shrink-0">
           <div className="flex items-center gap-3 px-3 py-2">
             <button
               onClick={() => { navigate('/org/settings'); onClose() }}
@@ -206,7 +206,7 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { user } = useAuthStore()
 
   return (
-    <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.06] flex items-center gap-4 px-6 sticky top-0 z-20">
+    <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-transparent flex items-center gap-4 px-6 sticky top-0 z-20">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

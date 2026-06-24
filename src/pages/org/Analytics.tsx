@@ -136,13 +136,13 @@ export function OrgAnalytics() {
 
       {/* Per-job engagement table */}
       <Card padding="none">
-        <div className="p-5 border-b border-slate-100 dark:border-white/[0.06]">
+        <div className="p-5 border-b border-slate-100 dark:border-transparent">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Job Engagement</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 dark:border-white/[0.06] text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <tr className="border-b border-slate-100 dark:border-transparent text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 <th className="text-left font-medium py-3 px-5">Job</th>
                 <th className="text-center font-medium py-3 px-3">Candidates</th>
                 <th className="text-center font-medium py-3 px-3">Evaluated</th>
@@ -157,7 +157,7 @@ export function OrgAnalytics() {
                 <tr><td colSpan={7} className="text-center py-12 text-slate-400 dark:text-slate-500">No jobs yet</td></tr>
               ) : (
                 perJob.map(j => (
-                  <tr key={j.id} className="border-b border-slate-100 dark:border-white/[0.06]/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+                  <tr key={j.id} className="border-b border-slate-100 dark:border-transparent/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
                     <td className="py-3 px-5">
                       <p className="font-medium text-slate-900 dark:text-slate-100">{j.title}</p>
                       <p className="text-xs text-slate-400 dark:text-slate-500">{j.department}</p>

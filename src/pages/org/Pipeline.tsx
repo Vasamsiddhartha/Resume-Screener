@@ -79,9 +79,9 @@ export function PipelinePage() {
                 key={col.key}
                 onDragOver={e => e.preventDefault()}
                 onDrop={() => handleDrop(col.key)}
-                className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/[0.06] rounded-xl flex flex-col min-h-[200px]"
+                className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-transparent rounded-xl flex flex-col min-h-[200px]"
               >
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-white/[0.06]">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-transparent">
                   <span className={cn('w-2 h-2 rounded-full', col.accent)} />
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{col.title}</h3>
                   <span className="ml-auto text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
@@ -102,7 +102,7 @@ export function PipelinePage() {
                       onDragStart={() => setDragId(c.id)}
                       onDragEnd={() => setDragId(null)}
                       className={cn(
-                        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.06] rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-sm',
+                        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-transparent rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-sm',
                         dragId === c.id && 'opacity-50'
                       )}
                     >

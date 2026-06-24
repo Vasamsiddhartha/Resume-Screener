@@ -127,7 +127,7 @@ function NotificationsTab() {
 
   return (
     <Card>
-      <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+      <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
         {NOTIFICATION_ITEMS.map(item => (
           <Toggle
             key={item.key}

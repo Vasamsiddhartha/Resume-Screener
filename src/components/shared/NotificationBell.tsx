@@ -56,7 +56,7 @@ export function NotificationBell() {
 
       {open && (
         <div className="absolute right-0 top-full mt-1 w-80 max-w-[90vw] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-white/[0.06]">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-transparent">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</p>
             {items.length > 0 && (
               <button onClick={clear} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Clear all</button>
@@ -77,7 +77,7 @@ export function NotificationBell() {
                     key={n.id}
                     onClick={() => { markRead(n.id); viewAll() }}
                     className={cn(
-                      'w-full text-left flex items-start gap-3 px-4 py-3 border-b border-slate-50 dark:border-white/[0.06]/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors',
+                      'w-full text-left flex items-start gap-3 px-4 py-3 border-b border-slate-50 dark:border-transparent/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors',
                       !n.read && 'bg-violet-50/40 dark:bg-violet-900/10'
                     )}
                   >
@@ -98,7 +98,7 @@ export function NotificationBell() {
             )}
           </div>
 
-          <div className="flex items-center border-t border-slate-100 dark:border-white/[0.06]">
+          <div className="flex items-center border-t border-slate-100 dark:border-transparent">
             {unread > 0 && (
               <button
                 onClick={markAllRead}

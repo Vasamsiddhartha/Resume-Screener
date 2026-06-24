@@ -18,9 +18,9 @@ export function Card({ children, className, hover, padding = 'md' }: CardProps) 
   return (
     <div
       className={cn(
-        'surface-card rounded-xl bg-white dark:bg-slate-900/80',
-        'border border-slate-200/80 dark:border-white/[0.07]',
-        hover && 'transition-all duration-200 hover:-translate-y-px hover:border-slate-300 dark:hover:border-white/[0.12]',
+        'surface-card rounded-xl bg-white dark:bg-slate-900',
+        'border border-slate-200/80 dark:border-transparent',
+        hover && 'transition-all duration-200 hover:-translate-y-px hover:border-slate-300 dark:hover:bg-slate-800/60',
         paddingClasses[padding],
         className
       )}

@@ -151,7 +151,7 @@ export function OrgSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' | 'he
               </button>
             ))}
 
-            <div className="border-t border-slate-100 dark:border-white/[0.06] my-1" />
+            <div className="border-t border-slate-100 dark:border-transparent my-1" />
             <button
               onClick={() => { setOpen(false); setCreateOpen(true) }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"

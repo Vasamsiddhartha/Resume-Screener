@@ -40,12 +40,12 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/[0.06] z-40 flex flex-col transition-transform duration-300',
+          'fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-transparent z-40 flex flex-col transition-transform duration-300',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Logo */}
-        <div className="h-14 flex items-center gap-2.5 px-5 border-b border-slate-100 dark:border-white/[0.06] shrink-0">
+        <div className="h-14 flex items-center gap-2.5 px-5 border-b border-slate-100 dark:border-transparent shrink-0">
           <BrandLogo imgClassName="w-7 h-7" />
           <span className="ml-auto text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
             Super Admin
@@ -81,7 +81,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         </nav>
 
         {/* User */}
-        <div className="p-3 border-t border-slate-100 dark:border-white/[0.06] shrink-0">
+        <div className="p-3 border-t border-slate-100 dark:border-transparent shrink-0">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
               <User className="w-4 h-4 text-violet-600 dark:text-violet-400" />
@@ -106,7 +106,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
 function Header({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-white/[0.06] flex items-center gap-4 px-6 sticky top-0 z-20">
+    <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-transparent flex items-center gap-4 px-6 sticky top-0 z-20">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

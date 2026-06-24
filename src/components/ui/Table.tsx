@@ -29,7 +29,7 @@ export function Table<T extends Record<string, unknown>>({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 dark:border-white/[0.06]">
+          <tr className="border-b border-slate-200 dark:border-transparent">
             {columns.map(col => (
               <th
                 key={col.key}
@@ -62,7 +62,7 @@ export function Table<T extends Record<string, unknown>>({
             data.map(row => (
               <tr
                 key={keyExtractor(row)}
-                className="border-b border-slate-100 dark:border-white/[0.06]/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
+                className="border-b border-slate-100 dark:border-transparent/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors"
               >
                 {columns.map(col => (
                   <td key={col.key} className={cn('py-3 px-4 text-slate-700 dark:text-slate-300', col.className)}>
@@ -93,7 +93,7 @@ export function Pagination({ page, perPage, total, onPageChange }: PaginationPro
   const end = Math.min(page * perPage, total)
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-white/[0.06]">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-transparent">
       <p className="text-xs text-slate-500 dark:text-slate-400">
         Showing <span className="font-medium text-slate-700 dark:text-slate-300">{start}–{end}</span> of{' '}
         <span className="font-medium text-slate-700 dark:text-slate-300">{total}</span> results
