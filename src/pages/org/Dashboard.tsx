@@ -87,12 +87,16 @@ export function OrgDashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Candidates" value={totalCandidates} icon={Users}
+          onClick={() => navigate('/org/candidates')}
           iconColor="text-blue-600 dark:text-blue-400" iconBg="bg-blue-100 dark:bg-blue-900/30" />
         <StatCard title="Active Jobs" value={activeJobs} icon={Briefcase}
+          onClick={() => navigate('/org/jobs', { state: { status: 'active' } })}
           iconColor="text-violet-600 dark:text-violet-400" iconBg="bg-violet-100 dark:bg-violet-900/30" />
         <StatCard title="Evaluations" value={totalEvaluations} icon={FileSearch}
+          onClick={() => navigate('/org/evaluations')}
           iconColor="text-emerald-600 dark:text-emerald-400" iconBg="bg-emerald-100 dark:bg-emerald-900/30" />
         <StatCard title="Avg ATS Score" value={`${averageScore.toFixed(1)}%`} icon={TrendingUp}
+          onClick={() => navigate('/org/analytics')}
           iconColor="text-orange-600 dark:text-orange-400" iconBg="bg-orange-100 dark:bg-orange-900/30" />
       </div>
 

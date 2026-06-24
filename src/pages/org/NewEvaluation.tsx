@@ -20,6 +20,9 @@ import type { ATSResponsePayload } from '@/types'
 
 type Step = 'upload' | 'select-job' | 'review' | 'result'
 
+// Blue "shine" applied to inputs that were auto-filled from the resume.
+const SHINE_CLASS = 'border-blue-400 dark:border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/40 dark:bg-blue-500/10 focus:border-blue-500 focus:ring-blue-500/30'
+
 const STEPS: { key: Step; label: string; num: number }[] = [
   { key: 'upload', label: 'Upload Resume', num: 1 },
   { key: 'select-job', label: 'Select Job', num: 2 },
@@ -460,6 +463,7 @@ export function NewEvaluationPage() {
                   label="Candidate Name *"
                   placeholder="Jane Doe"
                   hint={autoFilled.name ? 'Auto-detected from resume' : undefined}
+                  className={autoFilled.name ? SHINE_CLASS : undefined}
                   value={candidateName}
                   onChange={e => { setCandidateName(e.target.value); setAutoFilled(a => ({ ...a, name: false })) }}
                 />
@@ -468,6 +472,7 @@ export function NewEvaluationPage() {
                   type="email"
                   placeholder="jane@email.com (optional)"
                   hint={autoFilled.email ? 'Auto-detected from resume' : undefined}
+                  className={autoFilled.email ? SHINE_CLASS : undefined}
                   value={candidateEmail}
                   onChange={e => { setCandidateEmail(e.target.value); setAutoFilled(a => ({ ...a, email: false })) }}
                 />

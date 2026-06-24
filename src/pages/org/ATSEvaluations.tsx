@@ -36,6 +36,7 @@ export function ATSEvaluationsPage() {
   const [labelFilter, setLabelFilter] = useState('all')
   const [selected, setSelected] = useState<ATSEvaluation | null>(null)
   const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(EVAL_PER_PAGE)
 
   const { data, isLoading } = useQuery({
     queryKey: ['evaluations', orgId, search, jobFilter, labelFilter],
@@ -164,7 +165,7 @@ export function ATSEvaluationsPage() {
                 No evaluations found
               </div>
             ) : (
-              (data?.data ?? []).slice((page - 1) * EVAL_PER_PAGE, page * EVAL_PER_PAGE).map(ev => (
+              (data?.data ?? []).slice((page - 1) * perPage, page * perPage).map(ev => (
                 <button
                   key={ev.id}
                   onClick={() => setSelected(ev)}
@@ -198,8 +199,12 @@ export function ATSEvaluationsPage() {
           </div>
         )}
 
-        {!isLoading && (data?.data.length ?? 0) > EVAL_PER_PAGE && (
-          <Pagination page={page} perPage={EVAL_PER_PAGE} total={data?.data.length ?? 0} onPageChange={setPage} />
+        {!isLoading && (data?.data.length ?? 0) > 0 && (
+          <Pagination
+            page={page} perPage={perPage} total={data?.data.length ?? 0}
+            onPageChange={setPage}
+            onPerPageChange={p => { setPerPage(p); setPage(1) }}
+          />
         )}
       </Card>
 

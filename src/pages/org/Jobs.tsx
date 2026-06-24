@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -70,9 +70,12 @@ export function JobsPage() {
   const orgId = user?.organizationId ?? 'org1'
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  // Preset the status filter when navigated from the dashboard (e.g. "Active Jobs").
+  const navState = (useLocation().state ?? {}) as { status?: string }
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(navState.status ?? 'all')
   const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(PER_PAGE)
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Job | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null)
@@ -82,8 +85,8 @@ export function JobsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['jobs', orgId, search, statusFilter, page],
-    queryFn: () => jobService.getAll(orgId, { search, status: statusFilter, page, perPage: PER_PAGE }),
+    queryKey: ['jobs', orgId, search, statusFilter, page, perPage],
+    queryFn: () => jobService.getAll(orgId, { search, status: statusFilter, page, perPage }),
   })
 
   const jobsOnPage = data?.data ?? []
@@ -336,8 +339,12 @@ export function JobsPage() {
           </div>
         )}
 
-        {data && data.total > PER_PAGE && (
-          <Pagination page={page} perPage={PER_PAGE} total={data.total} onPageChange={p => { setPage(p); clearSelection() }} />
+        {data && data.total > 0 && (
+          <Pagination
+            page={page} perPage={perPage} total={data.total}
+            onPageChange={p => { setPage(p); clearSelection() }}
+            onPerPageChange={p => { setPerPage(p); setPage(1); clearSelection() }}
+          />
         )}
       </Card>
 

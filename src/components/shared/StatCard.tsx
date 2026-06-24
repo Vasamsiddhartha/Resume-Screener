@@ -12,6 +12,7 @@ interface StatCardProps {
   description?: string
   className?: string
   compact?: boolean
+  onClick?: () => void
 }
 
 export function StatCard({
@@ -25,13 +26,19 @@ export function StatCard({
   description,
   className,
   compact = false,
+  onClick,
 }: StatCardProps) {
   return (
     <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }) : undefined}
       className={cn(
         'surface-card kpi-gradient rounded-xl bg-white dark:bg-slate-900',
         'border border-slate-200/80 dark:border-transparent',
-        'transition-colors duration-200 hover:border-slate-300/80 dark:hover:bg-slate-800/50',
+        'transition-all duration-200 hover:border-slate-300/80 dark:hover:bg-slate-800/50',
+        onClick && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500/40',
         compact ? 'p-3' : 'p-5',
         className
       )}
