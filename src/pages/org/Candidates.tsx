@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Search, UserPlus, Users, Trash2, Folder, ChevronDown, Upload } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -44,6 +44,7 @@ export function CandidatesPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   // Preset filters when navigated from the Jobs page (e.g. "view shortlisted")
   const navState = (useLocation().state ?? {}) as { jobId?: string; status?: string }
   const [search, setSearch] = useState('')
@@ -203,7 +204,12 @@ export function CandidatesPage() {
 
                     {/* Candidates in this folder */}
                     {!isCollapsed && list.map(c => (
-                      <div key={c.id} className="flex items-center gap-4 px-5 py-4 pl-12 border-t border-slate-100 dark:border-transparent/60 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
+                      <div
+                        key={c.id}
+                        onClick={() => navigate('/org/evaluations', { state: { candidateId: c.id, candidateName: c.name } })}
+                        title="View evaluation"
+                        className="flex items-center gap-4 px-5 py-4 pl-12 border-t border-slate-100 dark:border-white/[0.04] hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group cursor-pointer"
+                      >
                         {c.latestScore !== undefined ? (
                           <CircularProgress score={c.latestScore} size="sm" />
                         ) : (
@@ -230,7 +236,7 @@ export function CandidatesPage() {
                           <p className="text-xs text-slate-400 dark:text-slate-500">{formatDate(c.createdAt)}</p>
                         </div>
                         <button
-                          onClick={() => setDeleteTarget(c)}
+                          onClick={e => { e.stopPropagation(); setDeleteTarget(c) }}
                           className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                         >
                           <Trash2 className="w-4 h-4" />

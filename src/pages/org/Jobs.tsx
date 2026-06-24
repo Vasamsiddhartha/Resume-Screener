@@ -255,7 +255,7 @@ export function JobsPage() {
               <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">No jobs found</div>
             ) : (
               jobsOnPage.map(job => (
-                <div key={job.id} className={cn('flex items-start gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative', selected.has(job.id) && 'bg-violet-50/40 dark:bg-violet-500/[0.06]')}>
+                <div key={job.id} onDoubleClick={() => openEdit(job)} title="Double-click to edit" className={cn('flex items-start gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative select-none', selected.has(job.id) && 'bg-violet-50/40 dark:bg-violet-500/[0.06]')}>
                   <input
                     type="checkbox"
                     className="w-4 h-4 mt-2.5 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500 cursor-pointer shrink-0"

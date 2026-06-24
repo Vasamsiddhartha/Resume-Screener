@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { Briefcase, Users, FileSearch, Star, TrendingUp } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatCard } from '@/components/shared/StatCard'
@@ -15,6 +16,7 @@ import { useChartTheme } from '@/lib/chartTheme'
 export function OrgAnalytics() {
   const { user } = useAuthStore()
   const chart = useChartTheme()
+  const navigate = useNavigate()
   const orgId = user?.organizationId ?? 'org1'
 
   const { data: jobsData, isLoading: jobsLoading } = useQuery({
@@ -87,14 +89,19 @@ export function OrgAnalytics() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <StatCard compact title="Active Jobs" value={jobs.filter(j => j.status === 'active').length} icon={Briefcase}
+          onClick={() => navigate('/org/jobs', { state: { status: 'active' } })}
           iconColor="text-violet-600 dark:text-violet-400" iconBg="bg-violet-100 dark:bg-violet-900/30" />
         <StatCard compact title="Candidates" value={totalCandidates} icon={Users}
+          onClick={() => navigate('/org/candidates')}
           iconColor="text-blue-600 dark:text-blue-400" iconBg="bg-blue-100 dark:bg-blue-900/30" />
         <StatCard compact title="Evaluations" value={totalEvaluations} icon={FileSearch}
+          onClick={() => navigate('/org/evaluations')}
           iconColor="text-emerald-600 dark:text-emerald-400" iconBg="bg-emerald-100 dark:bg-emerald-900/30" />
         <StatCard compact title="Shortlisted" value={totalShortlisted} icon={Star}
+          onClick={() => navigate('/org/candidates', { state: { status: 'shortlisted' } })}
           iconColor="text-amber-600 dark:text-amber-400" iconBg="bg-amber-100 dark:bg-amber-900/30" />
         <StatCard compact title="Shortlist Rate" value={`${shortlistRate.toFixed(0)}%`} description={`avg score ${avgScore.toFixed(1)}`} icon={TrendingUp}
+          onClick={() => navigate('/org/candidates', { state: { status: 'shortlisted' } })}
           iconColor="text-pink-600 dark:text-pink-400" iconBg="bg-pink-100 dark:bg-pink-900/30" />
       </div>
 

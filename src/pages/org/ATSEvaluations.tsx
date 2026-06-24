@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Trophy, Mail, Briefcase, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
@@ -38,6 +38,10 @@ export function ATSEvaluationsPage() {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(EVAL_PER_PAGE)
 
+  // Auto-open a candidate's evaluation when navigated here from the Candidates list.
+  const navState = (useLocation().state ?? {}) as { candidateId?: string; candidateName?: string }
+  const autoOpenedRef = useRef(false)
+
   const { data, isLoading } = useQuery({
     queryKey: ['evaluations', orgId, search, jobFilter, labelFilter],
     queryFn: () => atsService.getAll(orgId, { search, jobId: jobFilter, label: labelFilter, perPage: 100 }),
@@ -49,6 +53,20 @@ export function ATSEvaluationsPage() {
   })
 
   const jobOptions = buildJobFilterOptions(jobsData?.data ?? [])
+
+  // Open the matching evaluation modal once, when arriving from a candidate click.
+  useEffect(() => {
+    if (autoOpenedRef.current) return
+    if (!navState.candidateId && !navState.candidateName) return
+    const list = data?.data ?? []
+    if (list.length === 0) return
+    const match =
+      list.find(e => e.candidateId === navState.candidateId) ??
+      list.find(e => e.candidateName.toLowerCase() === (navState.candidateName ?? '').toLowerCase())
+    autoOpenedRef.current = true
+    if (match) setSelected(match)
+    else if (navState.candidateName) setSearch(navState.candidateName) // no eval yet → filter the list
+  }, [data, navState.candidateId, navState.candidateName])
 
   const decisionMutation = useMutation({
     mutationFn: ({ id, decision }: { id: string; decision: EvaluationDecision }) =>

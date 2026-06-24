@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -37,11 +37,18 @@ const NAV_ITEMS: NavItem[] = [
   },
 ]
 
-function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => void }) {
+// Does the current path belong to this group (its own route or a child)?
+function groupMatchesPath(item: NavGroupItem, pathname: string): boolean {
+  if (item.to && (pathname === item.to || pathname.startsWith(item.to + '/'))) return true
+  return item.children.some(c => pathname === c.to || pathname.startsWith(c.to + '/'))
+}
+
+// Controlled accordion item — `open` is owned by the Sidebar so only one group is
+// expanded at a time and it auto-collapses when you navigate elsewhere.
+function NavGroup({ item, open, onToggle, onNavigate }: { item: NavGroupItem; open: boolean; onToggle: () => void; onNavigate: () => void }) {
   const { pathname } = useLocation()
   const childActive = item.children.some(c => pathname.startsWith(c.to))
   const parentActive = item.to ? pathname === item.to || pathname.startsWith(item.to + '/') : false
-  const [open, setOpen] = useState(childActive || parentActive)
 
   const headerClass = cn(
     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -54,18 +61,18 @@ function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => 
     <div>
       <div className="flex items-center">
         {item.to ? (
-          // Clicking the parent navigates AND auto-opens the dropdown (like Settings).
-          <NavLink to={item.to} onClick={() => { setOpen(true); onNavigate() }} className={cn(headerClass, 'flex-1')}>
+          // Clicking the parent navigates; the route sync then expands this group.
+          <NavLink to={item.to} onClick={onNavigate} className={cn(headerClass, 'flex-1')}>
             <item.icon className="w-4 h-4 shrink-0" />
             {item.label}
           </NavLink>
         ) : (
-          <button onClick={() => setOpen(o => !o)} className={cn(headerClass, 'flex-1')}>
+          <button onClick={onToggle} className={cn(headerClass, 'flex-1')}>
             <item.icon className="w-4 h-4 shrink-0" />
             {item.label}
           </button>
         )}
-        <button onClick={() => setOpen(o => !o)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Toggle">
+        <button onClick={onToggle} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Toggle">
           <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
         </button>
       </div>
@@ -97,6 +104,15 @@ function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // Single open dropdown (accordion). Synced to the route: navigating to a page
+  // outside a group collapses all groups; into a group expands just that one.
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
+  useEffect(() => {
+    const match = NAV_ITEMS.find(it => 'children' in it && groupMatchesPath(it, pathname))
+    setOpenGroup(match ? match.label : null)
+  }, [pathname])
 
   function handleLogout() {
     logout()
@@ -149,7 +165,13 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
           {NAV_ITEMS.map(item =>
             'children' in item ? (
-              <NavGroup key={item.label} item={item} onNavigate={onClose} />
+              <NavGroup
+                key={item.label}
+                item={item}
+                open={openGroup === item.label}
+                onToggle={() => setOpenGroup(g => (g === item.label ? null : item.label))}
+                onNavigate={onClose}
+              />
             ) : (
               <NavLink
                 key={item.to}
