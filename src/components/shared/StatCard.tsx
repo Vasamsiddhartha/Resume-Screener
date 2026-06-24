@@ -29,7 +29,9 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/[0.06] rounded-xl',
+        'surface-card kpi-gradient rounded-xl bg-white dark:bg-slate-900/80',
+        'border border-slate-200/80 dark:border-white/[0.07]',
+        'transition-colors duration-200 hover:border-slate-300/80 dark:hover:border-white/[0.12]',
         compact ? 'p-3' : 'p-5',
         className
       )}
@@ -62,7 +64,7 @@ export function StatCard({
             </div>
           )}
         </div>
-        <div className={cn('rounded-xl shrink-0', iconBg, compact ? 'p-2' : 'p-3')}>
+        <div className={cn('rounded-xl shrink-0 ring-1 ring-inset ring-black/[0.04] dark:ring-white/10', iconBg, compact ? 'p-2' : 'p-3')}>
           <Icon className={cn(compact ? 'w-4 h-4' : 'w-5 h-5', iconColor)} />
         </div>
       </div>
