@@ -19,15 +19,15 @@ export function useChartTheme() {
     tick: isDark ? '#64748b' : '#94a3b8',
     tooltip: {
       contentStyle: {
-        background: isDark ? '#1e293b' : '#ffffff',
-        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+        background: isDark ? '#151b40' : '#ffffff',
+        border: `1px solid ${isDark ? '#232b55' : '#e2e8f0'}`,
         borderRadius: '10px',
-        boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.45)' : '0 8px 24px rgba(15,23,42,0.08)',
-        color: isDark ? '#e2e8f0' : '#0f172a',
+        boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.45)' : '0 8px 24px rgba(17,24,68,0.10)',
+        color: isDark ? '#e5e7eb' : '#111844',
         fontSize: '12px',
       },
-      labelStyle: { color: isDark ? '#e2e8f0' : '#0f172a' },
-      itemStyle: { color: isDark ? '#cbd5e1' : '#334155' },
+      labelStyle: { color: isDark ? '#e5e7eb' : '#111844' },
+      itemStyle: { color: isDark ? '#cbd5e1' : '#3d4677' },
     },
   }
 }

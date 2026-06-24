@@ -15,16 +15,16 @@ interface LayoutOpts {
   preheader?: string
 }
 
-const ACCENT = '#7c3aed' // app theme (violet-600)
-const TEXT = '#334155'
-const MUTED = '#94a3b8'
-const HEADING = '#0f172a'
+const ACCENT = '#4b5694' // brand primary
+const TEXT = '#3d4677'
+const MUTED = '#7288ae'
+const HEADING = '#111844'
 
 function emailLayout(o: LayoutOpts): string {
   const year = '2026'
   const logo = o.logoUrl
     ? `<img src="${o.logoUrl}" alt="${o.brand}" height="44" style="max-height:44px;border:0;outline:none;display:block;margin:0 auto;" />`
-    : `<div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;letter-spacing:1px;color:#b8860b;font-weight:600;">${o.brand}</div>`
+    : `<div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;letter-spacing:1px;color:${HEADING};font-weight:600;">${o.brand}</div>`
 
   return `<!doctype html>
 <html>
@@ -115,7 +115,7 @@ export function evaluationEmail(o: { candidateName: string; jobTitle: string; sc
                    <tr>
                      <td style="padding:10px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#64748b;">ATS Score</span>&nbsp;
-                       <span style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;color:#0f172a;">${o.score.toFixed(1)}</span>
+                       <span style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;color:${HEADING};">${o.score.toFixed(1)}</span>
                        &nbsp;&middot;&nbsp;
                        <span style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:${ACCENT};">${o.label}</span>
                      </td>

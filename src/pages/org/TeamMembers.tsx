@@ -59,8 +59,9 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
   })
 
   const roleMutation = useMutation({
-    mutationFn: ({ id, role }: { id: string; role: 'org_admin' | 'recruiter' }) => teamService.updateRole(id, role),
+    mutationFn: ({ id, role, isPending }: { id: string; role: 'org_admin' | 'recruiter'; isPending: boolean }) => teamService.updateRole(id, role, isPending),
     onSuccess: (_d, vars) => { notify('team', 'Role updated', `Changed to ${vars.role === 'org_admin' ? 'Admin' : 'Recruiter'}`); queryClient.invalidateQueries({ queryKey: ['team'] }) },
+    onError: (e) => notify('team', 'Could not update role', e instanceof Error ? e.message : 'Please try again'),
   })
 
   return (
@@ -117,8 +118,8 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{member.email}</p>
                 </div>
 
-                {/* Editable role (admins, active members other than self) */}
-                {isAdmin && member.isActive && member.id !== user?.id && (
+                {/* Editable role — admins can change any member/invite except themselves */}
+                {isAdmin && member.id !== user?.id && (
                   <Select
                     className="w-32 shrink-0"
                     options={[
@@ -126,7 +127,8 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
                       { value: 'org_admin', label: 'Admin' },
                     ]}
                     value={member.role}
-                    onChange={e => roleMutation.mutate({ id: member.id, role: e.target.value as 'org_admin' | 'recruiter' })}
+                    disabled={roleMutation.isPending}
+                    onChange={e => roleMutation.mutate({ id: member.id, role: e.target.value as 'org_admin' | 'recruiter', isPending: !member.isActive })}
                   />
                 )}
 

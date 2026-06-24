@@ -5,20 +5,43 @@
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 
-  --color-primary-50: #f5f3ff;
-  --color-primary-100: #ede9fe;
-  --color-primary-200: #ddd6fe;
-  --color-primary-300: #c4b5fd;
-  --color-primary-400: #a78bfa;
-  --color-primary-500: #8b5cf6;
-  --color-primary-600: #7c3aed;
-  --color-primary-700: #6d28d9;
-  --color-primary-800: #5b21b6;
-  --color-primary-900: #4c1d95;
-  --color-primary-950: #2e1065;
+  /* ── Brand palette ──────────────────────────────────────────────────────────
+     #111844 (deep navy) · #4B5694 (primary) · #7288AE (light) · #FFFFFF (white).
+     The whole app's accent is driven through the `violet-*` scale, so remapping it
+     here recolours every button/link/badge/active state to the new palette at once. */
+  --color-violet-50:  #eef0f7;
+  --color-violet-100: #dde2ef;
+  --color-violet-200: #bfc8de;
+  --color-violet-300: #98a5c6;
+  --color-violet-400: #7288ae;
+  --color-violet-500: #5a69a0;
+  --color-violet-600: #4b5694;
+  --color-violet-700: #3d4677;
+  --color-violet-800: #262c58;
+  --color-violet-900: #111844;
+  --color-violet-950: #0b0f30;
+
+  /* Keep an aliased primary scale in sync (in case anything references it). */
+  --color-primary-50:  #eef0f7;
+  --color-primary-100: #dde2ef;
+  --color-primary-200: #bfc8de;
+  --color-primary-300: #98a5c6;
+  --color-primary-400: #7288ae;
+  --color-primary-500: #5a69a0;
+  --color-primary-600: #4b5694;
+  --color-primary-700: #3d4677;
+  --color-primary-800: #262c58;
+  --color-primary-900: #111844;
+  --color-primary-950: #0b0f30;
+
+  /* Dark surfaces shift to navy so the theme reads as one palette. Lighter slates
+     (50–700) stay neutral for legible text; only the deep surface tones change. */
+  --color-slate-800: #232b55;
+  --color-slate-900: #151b40;
+  --color-slate-950: #0a0e26;
 
   --color-surface: #ffffff;
-  --color-surface-dark: #0f172a;
+  --color-surface-dark: #151b40;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -62,11 +85,11 @@ body {
 /* Premium dark base — deep surface with a faint, fixed violet brand glow that
    bleeds down from the top of the viewport (Linear/Vercel-style ambiance). */
 .dark body {
-  background-color: #060611;
+  background-color: #080b20;
   color: #e5e7eb;
   background-image:
-    radial-gradient(72rem 34rem at 50% -16%, rgba(124, 58, 237, 0.16), transparent 60%),
-    radial-gradient(60rem 30rem at 100% 0%, rgba(99, 102, 241, 0.08), transparent 55%);
+    radial-gradient(72rem 34rem at 50% -16%, rgba(75, 86, 148, 0.22), transparent 60%),
+    radial-gradient(60rem 30rem at 100% 0%, rgba(114, 136, 174, 0.10), transparent 55%);
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
@@ -98,8 +121,8 @@ body {
   .dark .kpi-gradient {
     background-image: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.14) 0%,
-      rgba(139, 92, 246, 0.04) 34%,
+      rgba(75, 86, 148, 0.30) 0%,
+      rgba(114, 136, 174, 0.10) 34%,
       rgba(255, 255, 255, 0.015) 70%
     );
   }

@@ -21,7 +21,7 @@ const MONTHLY = [
 const PLAN_DIST = [
   { name: 'Free', value: 1, color: '#94a3b8' },
   { name: 'Starter', value: 1, color: '#60a5fa' },
-  { name: 'Professional', value: 2, color: '#7c3aed' },
+  { name: 'Professional', value: 2, color: '#4b5694' },
   { name: 'Enterprise', value: 1, color: '#f59e0b' },
 ]
 
@@ -60,7 +60,7 @@ export function AnalyticsPage() {
               <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <Tooltip {...chart.tooltip} />
               <Legend wrapperStyle={{ fontSize: '12px' }} />
-              <Line type="monotone" dataKey="evaluations" name="Evaluations" stroke="#7c3aed" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="evaluations" name="Evaluations" stroke="#4b5694" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="users" name="Users" stroke="#10b981" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -97,7 +97,7 @@ export function AnalyticsPage() {
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
             <Tooltip {...chart.tooltip} />
-            <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="count" fill="#4b5694" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Card>

@@ -16,7 +16,7 @@ import {
 } from 'recharts'
 import { useChartTheme } from '@/lib/chartTheme'
 
-const PIE_COLORS = ['#10b981', '#22c55e', '#eab308', '#f97316', '#ef4444', '#8b5cf6', '#ec4899']
+const PIE_COLORS = ['#10b981', '#22c55e', '#eab308', '#f97316', '#ef4444', '#4b5694', '#ec4899']
 
 export function OrgDashboard() {
   const { user } = useAuthStore()
@@ -103,15 +103,15 @@ export function OrgDashboard() {
             <AreaChart data={evaluationTrend}>
               <defs>
                 <linearGradient id="orgGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#4b5694" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#4b5694" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <Tooltip {...chart.tooltip} />
-              <Area type="monotone" dataKey="evaluations" name="Evaluations" stroke="#7c3aed" strokeWidth={2} fill="url(#orgGrad)" />
+              <Area type="monotone" dataKey="evaluations" name="Evaluations" stroke="#4b5694" strokeWidth={2} fill="url(#orgGrad)" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>

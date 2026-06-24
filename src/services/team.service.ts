@@ -126,13 +126,15 @@ export const teamService = {
     return newMember
   },
 
-  async updateRole(id: string, role: TeamMember['role']): Promise<TeamMember> {
+  async updateRole(id: string, role: TeamMember['role'], isPending = false): Promise<TeamMember> {
     if (supabase) {
-      const { data, error } = await supabase.from('memberships').update({ role }).eq('id', id).select().single()
+      // Active member → memberships row; pending invite → invitations row.
+      const table = isPending ? 'invitations' : 'memberships'
+      const { data, error } = await supabase.from(table).update({ role }).eq('id', id).select().single()
       if (error) throw error
       return {
         id: data.id, organizationId: data.organization_id, name: '', email: '',
-        role: data.role, isActive: true, joinedAt: data.created_at,
+        role: data.role, isActive: !isPending, joinedAt: data.created_at,
       }
     }
     await delay(400)

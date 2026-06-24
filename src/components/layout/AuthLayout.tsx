@@ -6,7 +6,7 @@ export function AuthLayout() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-violet-700 to-indigo-800 relative overflow-hidden flex-col justify-between p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-violet-800 to-violet-950 relative overflow-hidden flex-col justify-between p-12">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/5 rounded-full" />

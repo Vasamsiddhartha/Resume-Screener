@@ -84,15 +84,15 @@ export function SuperAdminDashboard() {
             <AreaChart data={MONTHLY_DATA}>
               <defs>
                 <linearGradient id="evalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#4b5694" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#4b5694" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <Tooltip {...chart.tooltip} />
-              <Area type="monotone" dataKey="evaluations" stroke="#7c3aed" strokeWidth={2} fill="url(#evalGrad)" />
+              <Area type="monotone" dataKey="evaluations" stroke="#4b5694" strokeWidth={2} fill="url(#evalGrad)" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -105,7 +105,7 @@ export function SuperAdminDashboard() {
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} />
               <Tooltip {...chart.tooltip} />
-              <Bar dataKey="organizations" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="organizations" fill="#4b5694" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

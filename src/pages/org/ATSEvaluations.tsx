@@ -114,7 +114,7 @@ export function ATSEvaluationsPage() {
                   <XAxis dataKey="range" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <YAxis hide />
                   <Tooltip
-                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '11px' }}
+                    contentStyle={{ background: '#151b40', border: 'none', borderRadius: '8px', color: '#f1f5f9', fontSize: '11px' }}
                   />
                   <Bar dataKey="count" radius={[3, 3, 0, 0]}>
                     {scoreBins.map((bin, i) => (

@@ -65,7 +65,7 @@ export function OrgAnalytics() {
 
   const funnel = [
     { stage: 'Candidates', value: totalCandidates, color: '#60a5fa' },
-    { stage: 'Evaluated', value: totalEvaluations, color: '#7c3aed' },
+    { stage: 'Evaluated', value: totalEvaluations, color: '#4b5694' },
     { stage: 'Shortlisted', value: totalShortlisted, color: '#10b981' },
     { stage: 'Hired', value: totalHired, color: '#f59e0b' },
   ]
@@ -127,7 +127,7 @@ export function OrgAnalytics() {
                 <XAxis dataKey="name" tick={{ fontSize: 9, fill: chart.tick }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
                 <YAxis tick={{ fontSize: 11, fill: chart.tick }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip {...chart.tooltip} />
-                <Bar dataKey="candidates" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={28} />
+                <Bar dataKey="candidates" fill="#4b5694" radius={[4, 4, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
           )}
