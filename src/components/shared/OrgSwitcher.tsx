@@ -91,6 +91,8 @@ export function OrgSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' | 'he
 
   const isHeader = variant === 'header'
   const otherCount = memberships.filter(m => m.organizationId !== activeId).length
+  // Only admins (of any org) and super admins may spin up new organizations.
+  const canCreateOrg = user?.role === 'super_admin' || memberships.some(m => m.role === 'org_admin')
 
   return (
     <>
@@ -151,16 +153,20 @@ export function OrgSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' | 'he
               </button>
             ))}
 
-            <div className="border-t border-slate-100 dark:border-transparent my-1" />
-            <button
-              onClick={() => { setOpen(false); setCreateOpen(true) }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-            >
-              <div className="w-6 h-6 rounded-md border border-dashed border-violet-300 dark:border-violet-700 flex items-center justify-center shrink-0">
-                <Plus className="w-3.5 h-3.5" />
-              </div>
-              Create organization
-            </button>
+            {canCreateOrg && (
+              <>
+                <div className="border-t border-slate-100 dark:border-transparent my-1" />
+                <button
+                  onClick={() => { setOpen(false); setCreateOpen(true) }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                >
+                  <div className="w-6 h-6 rounded-md border border-dashed border-violet-300 dark:border-violet-700 flex items-center justify-center shrink-0">
+                    <Plus className="w-3.5 h-3.5" />
+                  </div>
+                  Create organization
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

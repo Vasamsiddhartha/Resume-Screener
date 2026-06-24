@@ -11,9 +11,13 @@ let members = [...MOCK_TEAM_MEMBERS]
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>
 
-function acceptInviteUrl(email: string): string {
-  // HashRouter URL the invited person uses to set a password
-  return `${window.location.origin}${window.location.pathname}#/accept-invite?email=${encodeURIComponent(email)}`
+function acceptInviteUrl(email: string, orgName?: string, role?: string): string {
+  // HashRouter URL the invited person uses to set a password. Carries the org
+  // name + role so the accept page can show which workspace they're joining.
+  const p = new URLSearchParams({ email })
+  if (orgName) p.set('org', orgName)
+  if (role) p.set('role', role)
+  return `${window.location.origin}${window.location.pathname}#/accept-invite?${p.toString()}`
 }
 
 export const teamService = {
@@ -82,7 +86,7 @@ export const teamService = {
         ...inviteEmail({
           orgName: payload.organizationName ?? 'an organization',
           role: payload.role,
-          acceptUrl: acceptInviteUrl(payload.email),
+          acceptUrl: acceptInviteUrl(payload.email, payload.organizationName, payload.role),
           logoUrl: payload.organizationLogo,
         }),
       })

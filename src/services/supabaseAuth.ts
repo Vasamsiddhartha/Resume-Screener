@@ -59,23 +59,25 @@ async function ensureMembership(orgName?: string): Promise<void> {
   const email = authData?.user?.email
   if (!uid) return
 
-  // Already a member? Nothing to do.
-  const { data: existing } = await supabase
+  // Orgs the user already belongs to (don't early-return — an existing account
+  // can still have a pending invite to a DIFFERENT org that must be accepted).
+  const { data: mems } = await supabase
     .from('memberships')
-    .select('id')
+    .select('organization_id')
     .eq('user_id', uid)
-    .limit(1)
-  if (existing && existing.length > 0) return
+  const memberOrgIds = new Set((mems ?? []).map((m: { organization_id: string }) => m.organization_id))
 
-  // 1) Pending invitation for this email → join that org with the invited role
+  // 1) Pending invitation for this email → join that org with the invited role.
+  //    Skip invites for orgs the user is already in (supports multi-org accept).
   if (email) {
     const { data: invites } = await supabase
       .from('invitations')
       .select('*')
       .eq('status', 'pending')
       .ilike('email', email)
-      .limit(1)
-    const invite = invites?.[0]
+    const invite = (invites ?? []).find(
+      (i: { organization_id: string }) => !memberOrgIds.has(i.organization_id)
+    )
     if (invite) {
       const { error: memErr } = await supabase.from('memberships').insert({
         user_id: uid,
@@ -89,8 +91,8 @@ async function ensureMembership(orgName?: string): Promise<void> {
     }
   }
 
-  // 2) New signup with an org name → create the org and become its admin
-  if (orgName) {
+  // 2) Fresh signup (no memberships yet) with an org name → create org, become admin
+  if (memberOrgIds.size === 0 && orgName) {
     const slug =
       orgName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') +
       '-' +

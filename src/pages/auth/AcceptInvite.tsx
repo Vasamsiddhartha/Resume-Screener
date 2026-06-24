@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Lock, User as UserIcon, Mail } from 'lucide-react'
+import { Eye, EyeOff, Lock, User as UserIcon, Mail, Building2 } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { isSupabaseConfigured } from '@/lib/supabase'
@@ -21,18 +21,32 @@ export function AcceptInvitePage() {
   const { setAuth } = useAuthStore()
   const navigate = useNavigate()
 
-  // Email comes from the invite link (?email=...)
+  // Details come from the invite link (?email=...&org=...&role=...)
   const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '')
   const email = params.get('email') ?? ''
+  const orgName = params.get('org') ?? ''
+  const roleParam = params.get('role') ?? ''
+  const roleLabel = roleParam === 'org_admin' ? 'Admin' : roleParam === 'recruiter' ? 'Recruiter' : ''
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
+  async function enterApp() {
+    const user = await buildUserFromSupabase()
+    if (user) {
+      setAuth(user, 'supabase')
+      // Joining a 2nd+ org → let them pick which workspace to open
+      navigate((user.memberships?.length ?? 0) > 1 ? '/select-organization' : '/org/dashboard')
+    } else {
+      navigate('/login')
+    }
+  }
+
   async function onSubmit(data: FormData) {
     setServerError('')
     try {
-      // Sign up with the invited email — membership comes from the pending invitation
+      // First-time user: create the account; membership comes from the pending invite
       const { needsConfirmation } = await supabaseAuth.signUp({
         name: data.name,
         email,
@@ -42,18 +56,27 @@ export function AcceptInvitePage() {
         navigate('/login')
         return
       }
-      const user = await buildUserFromSupabase()
-      if (user) {
-        setAuth(user, 'supabase')
-        navigate('/org/dashboard')
-      } else {
-        navigate('/login')
-      }
+      await enterApp()
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Could not accept invite'
-      setServerError(/already registered/i.test(raw)
-        ? 'You already have an account. Please sign in instead.'
-        : raw)
+      // Email already has an account (invited by another org). Treat the password
+      // field as their EXISTING password: sign in, which accepts the pending invite.
+      if (/already registered|already exists|user_already_exists/i.test(raw)) {
+        try {
+          await supabaseAuth.signIn(email, data.password)
+          await enterApp()
+          return
+        } catch (signInErr) {
+          const m = signInErr instanceof Error ? signInErr.message : ''
+          setServerError(
+            /invalid login|invalid credentials/i.test(m)
+              ? `You already have an account. Enter your existing password to join ${orgName || 'this organization'}.`
+              : (m || 'Could not join the organization')
+          )
+          return
+        }
+      }
+      setServerError(raw)
     }
   }
 
@@ -73,15 +96,23 @@ export function AcceptInvitePage() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Accept your invitation</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Set a password to join your team</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          {orgName
+            ? <>You've been invited to join <strong className="text-slate-700 dark:text-slate-300">{orgName}</strong>{roleLabel ? <> as <strong className="text-slate-700 dark:text-slate-300">{roleLabel}</strong></> : ''}.</>
+            : 'Set a password to join your team'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {orgName && (
+          <Input label="Organization" value={roleLabel ? `${orgName} · ${roleLabel}` : orgName} disabled readOnly leftIcon={<Building2 className="w-4 h-4" />} />
+        )}
         <Input label="Email" value={email} disabled leftIcon={<Mail className="w-4 h-4" />} readOnly />
         <Input label="Full name" placeholder="Jane Doe" leftIcon={<UserIcon className="w-4 h-4" />}
           error={errors.name?.message} {...register('name')} />
         <Input
-          label="Create password"
+          label="Password"
+          hint="New here? This becomes your password. Already have an account? Enter your existing password to join this organization."
           type={showPassword ? 'text' : 'password'}
           placeholder="Min. 8 characters"
           leftIcon={<Lock className="w-4 h-4" />}

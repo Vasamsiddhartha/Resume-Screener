@@ -27,8 +27,11 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
   const [copiedEmail, setCopiedEmail] = useState('')
 
-  function copyInviteLink(email: string) {
-    const url = `${window.location.origin}${window.location.pathname}#/accept-invite?email=${encodeURIComponent(email)}`
+  function copyInviteLink(email: string, role: string) {
+    const p = new URLSearchParams({ email })
+    if (user?.organizationName) p.set('org', user.organizationName)
+    if (role) p.set('role', role)
+    const url = `${window.location.origin}${window.location.pathname}#/accept-invite?${p.toString()}`
     navigator.clipboard?.writeText(url).then(() => {
       setCopiedEmail(email)
       setTimeout(() => setCopiedEmail(''), 2000)
@@ -143,7 +146,7 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
 
                 {isAdmin && !member.isActive && (
                   <button
-                    onClick={() => copyInviteLink(member.email)}
+                    onClick={() => copyInviteLink(member.email, member.role)}
                     className="text-xs font-medium px-2 py-1 rounded-lg text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors shrink-0 flex items-center gap-1"
                     title="Copy the set-password link to share with the invitee"
                   >
