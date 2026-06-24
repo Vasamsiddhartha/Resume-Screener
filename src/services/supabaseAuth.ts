@@ -52,12 +52,30 @@ export async function buildUserFromSupabase(): Promise<User | null> {
  *  1) accept a pending invitation (join an existing org), else
  *  2) create a new org from `orgName` (normal signup).
  *  Plain inserts only — no DB function. */
+/** Re-create the signed-in user's profile row if it's missing. memberships.user_id
+ *  has a FK to profiles(id); if the profile was deleted directly in the DB (but the
+ *  auth.users row remains), any membership/org insert would fail with a FK error.
+ *  Insert-if-absent only — never overwrites an existing profile's edited fields. */
+async function healOwnProfile(): Promise<void> {
+  if (!supabase) return
+  const { data: authData } = await supabase.auth.getUser()
+  const u = authData?.user
+  if (!u) return
+  await supabase.from('profiles').upsert(
+    { id: u.id, email: u.email ?? null, name: (u.user_metadata?.name as string) || u.email || 'User' },
+    { onConflict: 'id', ignoreDuplicates: true }
+  )
+}
+
 async function ensureMembership(orgName?: string): Promise<void> {
   if (!supabase) return
   const { data: authData } = await supabase.auth.getUser()
   const uid = authData?.user?.id
   const email = authData?.user?.email
   if (!uid) return
+
+  // Make sure the profile row exists before any membership insert (FK dependency).
+  await healOwnProfile()
 
   // Orgs the user already belongs to (don't early-return — an existing account
   // can still have a pending invite to a DIFFERENT org that must be accepted).
@@ -160,6 +178,9 @@ export const supabaseAuth = {
     const { data: authData } = await supabase.auth.getUser()
     const uid = authData?.user?.id
     if (!uid) throw new Error('You must be signed in')
+
+    // Heal a deleted profile first — membership insert FK-depends on it.
+    await healOwnProfile()
 
     const slug =
       name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') +

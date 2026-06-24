@@ -34,14 +34,15 @@
   --color-primary-900: #111844;
   --color-primary-950: #0b0f30;
 
-  /* Dark surfaces shift to navy so the theme reads as one palette. Lighter slates
-     (50–700) stay neutral for legible text; only the deep surface tones change. */
-  --color-slate-800: #232b55;
-  --color-slate-900: #151b40;
-  --color-slate-950: #0a0e26;
+  /* Dark surfaces use NEUTRAL grey (zinc-style), not blue — the standard for
+     modern SaaS dark themes (Linear / Vercel / shadcn). Only the deep surface
+     tones are remapped; lighter slates (50–700) stay for legible text. */
+  --color-slate-800: #262629;
+  --color-slate-900: #19191c;
+  --color-slate-950: #0c0c0e;
 
   --color-surface: #ffffff;
-  --color-surface-dark: #151b40;
+  --color-surface-dark: #19191c;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -85,11 +86,11 @@ body {
 /* Premium dark base — deep surface with a faint, fixed violet brand glow that
    bleeds down from the top of the viewport (Linear/Vercel-style ambiance). */
 .dark body {
-  background-color: #080b20;
+  background-color: #0a0a0b;
   color: #e5e7eb;
+  /* Neutral, barely-there light from the top for depth — no colour cast. */
   background-image:
-    radial-gradient(72rem 34rem at 50% -16%, rgba(75, 86, 148, 0.22), transparent 60%),
-    radial-gradient(60rem 30rem at 100% 0%, rgba(114, 136, 174, 0.10), transparent 55%);
+    radial-gradient(72rem 34rem at 50% -16%, rgba(255, 255, 255, 0.05), transparent 60%);
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
@@ -119,11 +120,12 @@ body {
 
   /* Subtle on-brand gradient wash for KPI / stat cards (dark only). */
   .dark .kpi-gradient {
+    /* Neutral top-light sheen — no blue cast. */
     background-image: linear-gradient(
       135deg,
-      rgba(75, 86, 148, 0.30) 0%,
-      rgba(114, 136, 174, 0.10) 34%,
-      rgba(255, 255, 255, 0.015) 70%
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.025) 34%,
+      rgba(255, 255, 255, 0) 70%
     );
   }
 }

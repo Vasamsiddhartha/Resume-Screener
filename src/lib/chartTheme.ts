@@ -19,8 +19,8 @@ export function useChartTheme() {
     tick: isDark ? '#64748b' : '#94a3b8',
     tooltip: {
       contentStyle: {
-        background: isDark ? '#151b40' : '#ffffff',
-        border: `1px solid ${isDark ? '#232b55' : '#e2e8f0'}`,
+        background: isDark ? '#1c1c1f' : '#ffffff',
+        border: `1px solid ${isDark ? '#2e2e31' : '#e2e8f0'}`,
         borderRadius: '10px',
         boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.45)' : '0 8px 24px rgba(17,24,68,0.10)',
         color: isDark ? '#e5e7eb' : '#111844',

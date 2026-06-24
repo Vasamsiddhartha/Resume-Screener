@@ -73,8 +73,8 @@ export function SignUpPage() {
           const m = signInErr instanceof Error ? signInErr.message : ''
           setServerError(
             /invalid login|invalid credentials/i.test(m)
-              ? 'This email already has an account. Enter that account’s password to add a new organization to it.'
-              : (m || 'Could not create organization for the existing account')
+              ? 'This email already has an account. Enter that account’s password to add this organization to it, or sign in instead.'
+              : (m || 'This email is already registered. Please sign in instead.')
           )
           return
         }

@@ -46,7 +46,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       >
         {/* Logo */}
         <div className="h-14 flex items-center gap-2.5 px-5 border-b border-slate-100 dark:border-transparent shrink-0">
-          <BrandLogo imgClassName="w-7 h-7" />
+          <BrandLogo imgClassName="h-7" />
           <span className="ml-auto text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">
             Super Admin
           </span>

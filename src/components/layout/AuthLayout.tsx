@@ -15,7 +15,7 @@ export function AuthLayout() {
         </div>
 
         <div className="relative">
-          <BrandLogo imgClassName="w-10 h-10" nameClassName="text-white font-semibold text-lg" />
+          <BrandLogo imgClassName="h-9" nameClassName="text-white font-semibold text-lg" />
         </div>
 
         <div className="relative">
@@ -49,7 +49,7 @@ export function AuthLayout() {
       {/* Right panel — form */}
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-6">
-          <BrandLogo className="lg:hidden" imgClassName="w-7 h-7" />
+          <BrandLogo className="lg:hidden" imgClassName="h-7" />
           <div className="lg:ml-auto">
             <ThemeToggle />
           </div>

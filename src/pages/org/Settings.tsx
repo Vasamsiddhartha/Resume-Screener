@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Save, Building2, Sun, Moon, Monitor, CheckCircle, RotateCcw } from 'lucide-react'
+import { Save, Building2, Sun, Moon, CheckCircle, RotateCcw } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardHeader, Button, Input, Select, Textarea, Toggle } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
@@ -156,14 +156,13 @@ function AppearanceTab() {
   const themeOptions = [
     { value: 'light', label: 'Light', icon: Sun },
     { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
   ] as const
 
   return (
     <Card>
       <div className="mb-6">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Theme</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {themeOptions.map(opt => (
             <button
               key={opt.value}
