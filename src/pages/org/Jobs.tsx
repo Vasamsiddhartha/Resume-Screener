@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal, Star, Trophy, CheckCircle } from 'lucide-react'
+import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal, Star, Trophy, CheckCircle, Upload } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner, Textarea } from '@/components/ui'
+import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner, Textarea, Pagination } from '@/components/ui'
+import { BulkImportModal, type ImportField } from '@/components/shared/BulkImportModal'
 import { jobService } from '@/services/job.service'
+import type { CreateJobPayload } from '@/types'
 import { candidateService } from '@/services/candidate.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
 import { notify } from '@/store/notifications.store'
 import type { Job } from '@/types'
@@ -40,6 +42,29 @@ const STATUS_OPTIONS = [
   { value: 'archived', label: 'Archived' },
 ]
 
+const PER_PAGE = 10
+
+// Columns the bulk importer maps to. Aliases drive auto-detection of headers.
+const JOB_IMPORT_FIELDS: ImportField[] = [
+  { key: 'title', label: 'Job Title', required: true, aliases: ['title', 'position', 'role'], example: 'Senior Software Engineer' },
+  { key: 'department', label: 'Department', required: true, aliases: ['dept'], example: 'Engineering' },
+  { key: 'location', label: 'Location', required: true, aliases: ['place', 'city'], example: 'Remote' },
+  { key: 'experienceRequired', label: 'Experience Required', required: true, aliases: ['experience', 'exp'], example: '3+ years' },
+  { key: 'employmentType', label: 'Employment Type', aliases: ['type', 'job type'], example: 'Full Time' },
+  { key: 'description', label: 'Job Description', required: true, aliases: ['jd', 'details', 'summary'], example: 'Build and maintain...' },
+]
+
+const EMP_TYPE_MAP: Record<string, CreateJobPayload['employmentType']> = {
+  fulltime: 'full_time', full: 'full_time', permanent: 'full_time',
+  parttime: 'part_time', part: 'part_time',
+  contract: 'contract', contractor: 'contract',
+  freelance: 'freelance', freelancer: 'freelance',
+  internship: 'internship', intern: 'internship',
+}
+function normalizeEmploymentType(v: string): CreateJobPayload['employmentType'] {
+  return EMP_TYPE_MAP[v.trim().toLowerCase().replace(/[\s_-]+/g, '')] ?? 'full_time'
+}
+
 export function JobsPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
@@ -47,15 +72,28 @@ export function JobsPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Job | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null)
   const [actionMenu, setActionMenu] = useState<string | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['jobs', orgId, search, statusFilter],
-    queryFn: () => jobService.getAll(orgId, { search, status: statusFilter }),
+    queryKey: ['jobs', orgId, search, statusFilter, page],
+    queryFn: () => jobService.getAll(orgId, { search, status: statusFilter, page, perPage: PER_PAGE }),
   })
+
+  const jobsOnPage = data?.data ?? []
+  function toggleSelect(id: string) {
+    setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+  function toggleSelectAll() {
+    setSelected(s => s.size === jobsOnPage.length ? new Set() : new Set(jobsOnPage.map(j => j.id)))
+  }
+  function clearSelection() { setSelected(new Set()) }
 
   // Shortlisted + hired candidates per job → shown as tags on each job
   const { data: candidatesData } = useQuery({
@@ -101,6 +139,34 @@ export function JobsPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['jobs'] }); setDeleteTarget(null) },
   })
 
+  const bulkArchiveMutation = useMutation({
+    mutationFn: (ids: string[]) => jobService.bulkArchive(ids),
+    onSuccess: (_d, ids) => { notify('job', 'Jobs archived', `${ids.length} job${ids.length === 1 ? '' : 's'} archived`); queryClient.invalidateQueries({ queryKey: ['jobs'] }); clearSelection() },
+    onError: (e) => notify('job', 'Bulk archive failed', e instanceof Error ? e.message : 'Please try again'),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) => jobService.bulkDelete(ids),
+    onSuccess: (_d, ids) => { notify('job', 'Jobs deleted', `${ids.length} job${ids.length === 1 ? '' : 's'} deleted`); queryClient.invalidateQueries({ queryKey: ['jobs'] }); clearSelection(); setBulkDeleteOpen(false) },
+    onError: (e) => notify('job', 'Bulk delete failed', e instanceof Error ? e.message : 'Please try again'),
+  })
+
+  async function importJobs(rows: Record<string, string>[]): Promise<number> {
+    const payload: CreateJobPayload[] = rows.map(r => ({
+      title: r.title,
+      department: r.department || '—',
+      location: r.location || '—',
+      experienceRequired: r.experienceRequired || '—',
+      employmentType: normalizeEmploymentType(r.employmentType || ''),
+      description: r.description || r.title,
+      organizationName: user?.organizationName,
+    }))
+    const count = await jobService.bulkCreate(orgId, payload)
+    notify('job', 'Jobs imported', `${count} job${count === 1 ? '' : 's'} added`)
+    queryClient.invalidateQueries({ queryKey: ['jobs'] })
+    return count
+  }
+
   function openEdit(job: Job) {
     setEditTarget(job)
     setValue('title', job.title)
@@ -124,9 +190,14 @@ export function JobsPage() {
         title="Job Descriptions"
         description="Manage open positions for ATS evaluation"
         action={
-          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => { setCreateOpen(true); reset() }}>
-            New Job
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" leftIcon={<Upload className="w-4 h-4" />} onClick={() => setImportOpen(true)}>
+              Import
+            </Button>
+            <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => { setCreateOpen(true); reset() }}>
+              New Job
+            </Button>
+          </div>
         }
       />
 
@@ -137,11 +208,41 @@ export function JobsPage() {
             leftIcon={<Search className="w-4 h-4" />}
             className="max-w-xs"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); clearSelection() }}
           />
           <Select options={STATUS_OPTIONS} className="w-40" value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)} />
+            onChange={e => { setStatusFilter(e.target.value); setPage(1); clearSelection() }} />
         </div>
+
+        {/* Bulk action bar */}
+        {selected.size > 0 && (
+          <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-violet-50 dark:bg-violet-500/10 border-b border-violet-100 dark:border-transparent">
+            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">{selected.size} selected</span>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" leftIcon={<Archive className="w-3.5 h-3.5" />}
+                isLoading={bulkArchiveMutation.isPending}
+                onClick={() => bulkArchiveMutation.mutate([...selected])}>Archive</Button>
+              <Button variant="secondary" size="sm" leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                className="text-red-600 dark:text-red-400"
+                onClick={() => setBulkDeleteOpen(true)}>Delete</Button>
+              <Button variant="ghost" size="sm" onClick={clearSelection}>Clear</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Select-all header */}
+        {!isLoading && jobsOnPage.length > 0 && (
+          <div className="flex items-center gap-3 px-5 py-2 border-b border-slate-100 dark:border-transparent">
+            <input
+              type="checkbox"
+              className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500 cursor-pointer"
+              checked={selected.size === jobsOnPage.length && jobsOnPage.length > 0}
+              ref={el => { if (el) el.indeterminate = selected.size > 0 && selected.size < jobsOnPage.length }}
+              onChange={toggleSelectAll}
+            />
+            <span className="text-xs text-slate-400 dark:text-slate-500">Select all on this page</span>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
@@ -150,8 +251,14 @@ export function JobsPage() {
             {data?.data.length === 0 ? (
               <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">No jobs found</div>
             ) : (
-              data?.data.map(job => (
-                <div key={job.id} className="flex items-start gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative">
+              jobsOnPage.map(job => (
+                <div key={job.id} className={cn('flex items-start gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors relative', selected.has(job.id) && 'bg-violet-50/40 dark:bg-violet-500/[0.06]')}>
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 mt-2.5 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500 cursor-pointer shrink-0"
+                    checked={selected.has(job.id)}
+                    onChange={() => toggleSelect(job.id)}
+                  />
                   <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0 mt-0.5">
                     <Briefcase className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                   </div>
@@ -228,7 +335,33 @@ export function JobsPage() {
             )}
           </div>
         )}
+
+        {data && data.total > PER_PAGE && (
+          <Pagination page={page} perPage={PER_PAGE} total={data.total} onPageChange={p => { setPage(p); clearSelection() }} />
+        )}
       </Card>
+
+      {/* Bulk import wizard */}
+      <BulkImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Bulk Import Job Descriptions"
+        entityLabel="job descriptions"
+        fields={JOB_IMPORT_FIELDS}
+        templateBaseName="job-descriptions-template"
+        onImport={importJobs}
+      />
+
+      {/* Bulk delete confirm */}
+      <ConfirmModal
+        isOpen={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={() => bulkDeleteMutation.mutate([...selected])}
+        title="Delete selected jobs"
+        description={`Permanently delete ${selected.size} selected job${selected.size === 1 ? '' : 's'}? This cannot be undone.`}
+        confirmLabel="Delete"
+        isLoading={bulkDeleteMutation.isPending}
+      />
 
       {/* Create / Edit Modal */}
       <Modal

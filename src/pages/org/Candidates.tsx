@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Search, UserPlus, Users, Trash2, Folder, ChevronDown } from 'lucide-react'
+import { Search, UserPlus, Users, Trash2, Folder, ChevronDown, Upload } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { Card, Button, Input, Select, Modal, ConfirmModal, Spinner } from '@/components/ui'
+import { BulkImportModal, type ImportField } from '@/components/shared/BulkImportModal'
 import { candidateService } from '@/services/candidate.service'
 import { jobService } from '@/services/job.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getStatusColor, getLabelColor, formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
+import { notify } from '@/store/notifications.store'
 import { LABEL_FILTER_OPTIONS, buildJobFilterOptions } from '@/lib/filters'
 import type { Candidate, ATSLabel } from '@/types'
 
@@ -31,6 +33,13 @@ const STATUS_OPTIONS = [
   { value: 'hired', label: 'Hired' },
 ]
 
+const CANDIDATE_IMPORT_FIELDS: ImportField[] = [
+  { key: 'name', label: 'Full Name', required: true, aliases: ['name', 'candidate', 'candidate name'], example: 'Jane Doe' },
+  { key: 'email', label: 'Email', aliases: ['e-mail', 'mail'], example: 'jane@email.com' },
+  { key: 'phone', label: 'Phone', aliases: ['mobile', 'contact', 'phone number'], example: '+1 555 000 0000' },
+  { key: 'appliedJobTitle', label: 'Applied Job Title', aliases: ['job', 'position', 'role', 'applied job'], example: 'Senior Software Engineer' },
+]
+
 export function CandidatesPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
@@ -42,6 +51,7 @@ export function CandidatesPage() {
   const [jobFilter, setJobFilter] = useState(navState.jobId ?? 'all')
   const [labelFilter, setLabelFilter] = useState('all')
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
@@ -109,15 +119,41 @@ export function CandidatesPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['candidates'] }); setDeleteTarget(null) },
   })
 
+  async function importCandidates(rows: Record<string, string>[]): Promise<number> {
+    const payload = rows.map(r => {
+      // Link to an existing job by matching the title (case-insensitive).
+      const match = r.appliedJobTitle
+        ? jobs.find(j => j.title.trim().toLowerCase() === r.appliedJobTitle.trim().toLowerCase())
+        : undefined
+      return {
+        name: r.name,
+        email: r.email || '',
+        phone: r.phone || '',
+        appliedJobId: match?.id,
+        appliedJobTitle: match?.title ?? (r.appliedJobTitle || undefined),
+        organizationName: user?.organizationName,
+      }
+    })
+    const count = await candidateService.bulkCreate(orgId, payload)
+    notify('candidate', 'Candidates imported', `${count} candidate${count === 1 ? '' : 's'} added`)
+    queryClient.invalidateQueries({ queryKey: ['candidates'] })
+    return count
+  }
+
   return (
     <div>
       <PageHeader
         title="Candidates"
         description="Manage and review all candidates"
         action={
-          <Button leftIcon={<UserPlus className="w-4 h-4" />} onClick={() => setCreateOpen(true)}>
-            Add Candidate
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" leftIcon={<Upload className="w-4 h-4" />} onClick={() => setImportOpen(true)}>
+              Import
+            </Button>
+            <Button leftIcon={<UserPlus className="w-4 h-4" />} onClick={() => setCreateOpen(true)}>
+              Add Candidate
+            </Button>
+          </div>
         }
       />
 
@@ -247,6 +283,16 @@ export function CandidatesPage() {
           </div>
         </div>
       </Modal>
+
+      <BulkImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Bulk Import Candidates"
+        entityLabel="candidates"
+        fields={CANDIDATE_IMPORT_FIELDS}
+        templateBaseName="candidates-template"
+        onImport={importCandidates}
+      />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

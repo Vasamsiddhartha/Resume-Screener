@@ -116,4 +116,43 @@ export const candidateService = {
     await delay(400)
     candidates = candidates.filter(c => c.id !== id)
   },
+
+  // ── Bulk operations — ONE query each ───────────────────────────────────────
+
+  async bulkCreate(orgId: string, rows: (CreateCandidatePayload & CandidateExtras)[]): Promise<number> {
+    if (rows.length === 0) return 0
+    if (supabase) {
+      const payload = rows.map(p => ({
+        organization_id: orgId,
+        organization_name: p.organizationName ?? null,
+        name: p.name,
+        email: p.email || null,
+        phone: p.phone || null,
+        applied_job_id: p.appliedJobId ?? null,
+        applied_job_title: p.appliedJobTitle ?? null,
+        status: p.status ?? 'new',
+      }))
+      const { data, error } = await supabase.from('candidates').insert(payload).select('id')
+      if (error) throw error
+      return data?.length ?? rows.length
+    }
+    await delay(500)
+    const created = rows.map(p => ({
+      id: generateId(), organizationId: orgId, status: 'new' as const,
+      createdAt: new Date().toISOString(), ...p,
+    }))
+    candidates = [...created, ...candidates]
+    return created.length
+  },
+
+  async bulkDelete(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    if (supabase) {
+      const { error } = await supabase.from('candidates').delete().in('id', ids)
+      if (error) throw error
+      return
+    }
+    await delay(400)
+    candidates = candidates.filter(c => !ids.includes(c.id))
+  },
 }

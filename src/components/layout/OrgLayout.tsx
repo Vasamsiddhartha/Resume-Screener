@@ -54,7 +54,8 @@ function NavGroup({ item, onNavigate }: { item: NavGroupItem; onNavigate: () => 
     <div>
       <div className="flex items-center">
         {item.to ? (
-          <NavLink to={item.to} onClick={onNavigate} className={cn(headerClass, 'flex-1')}>
+          // Clicking the parent navigates AND auto-opens the dropdown (like Settings).
+          <NavLink to={item.to} onClick={() => { setOpen(true); onNavigate() }} className={cn(headerClass, 'flex-1')}>
             <item.icon className="w-4 h-4 shrink-0" />
             {item.label}
           </NavLink>
@@ -214,6 +215,17 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <Menu className="w-5 h-5" />
       </button>
       <div className="flex-1" />
+      <NavLink
+        to="/org/pipeline"
+        className={({ isActive }) => cn(
+          'hidden sm:inline-flex items-center text-sm font-medium px-3 py-1.5 rounded-lg transition-colors',
+          isActive
+            ? 'bg-violet-50 dark:bg-violet-500/[0.12] text-violet-700 dark:text-violet-300'
+            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+        )}
+      >
+        Pipeline
+      </NavLink>
       <OrgSwitcher variant="header" />
       <span className="text-xs text-slate-500 dark:text-slate-400 capitalize hidden sm:block">
         {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}

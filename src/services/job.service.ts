@@ -116,4 +116,60 @@ export const jobService = {
     await delay(400)
     jobs = jobs.filter(j => j.id !== id)
   },
+
+  // ── Bulk operations — ONE query each (insert array / update-in / delete-in) ──
+
+  async bulkCreate(orgId: string, rows: CreateJobPayload[]): Promise<number> {
+    if (rows.length === 0) return 0
+    if (supabase) {
+      const payload = rows.map(p => ({
+        organization_id: orgId,
+        organization_name: p.organizationName ?? null,
+        title: p.title,
+        department: p.department,
+        location: p.location,
+        experience_required: p.experienceRequired,
+        employment_type: p.employmentType,
+        description: p.description,
+        status: 'active',
+      }))
+      const { data, error } = await supabase.from('jobs').insert(payload).select('id')
+      if (error) throw error
+      return data?.length ?? rows.length
+    }
+    await delay(500)
+    const created = rows.map(p => ({
+      id: generateId(), organizationId: orgId, organizationName: p.organizationName,
+      title: p.title, department: p.department, location: p.location,
+      experienceRequired: p.experienceRequired, employmentType: p.employmentType,
+      description: p.description, status: 'active' as const, candidateCount: 0,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }))
+    jobs = [...created, ...jobs]
+    return created.length
+  },
+
+  async bulkArchive(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    if (supabase) {
+      const { error } = await supabase.from('jobs')
+        .update({ status: 'archived', updated_at: new Date().toISOString() })
+        .in('id', ids)
+      if (error) throw error
+      return
+    }
+    await delay(400)
+    jobs = jobs.map(j => (ids.includes(j.id) ? { ...j, status: 'archived' as const } : j))
+  },
+
+  async bulkDelete(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+    if (supabase) {
+      const { error } = await supabase.from('jobs').delete().in('id', ids)
+      if (error) throw error
+      return
+    }
+    await delay(400)
+    jobs = jobs.filter(j => !ids.includes(j.id))
+  },
 }

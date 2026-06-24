@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Trophy, Mail, Briefcase, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
-import { Card, Button, Input, Select, Spinner, Modal, Badge } from '@/components/ui'
+import { Card, Button, Input, Select, Spinner, Modal, Badge, Pagination } from '@/components/ui'
 import { atsService } from '@/services/ats.service'
 import { jobService } from '@/services/job.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -24,6 +24,8 @@ const SCORE_BINS = [
   { range: '0–40', count: 0, color: '#ef4444' },
 ]
 
+const EVAL_PER_PAGE = 10
+
 export function ATSEvaluationsPage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
@@ -33,6 +35,7 @@ export function ATSEvaluationsPage() {
   const [jobFilter, setJobFilter] = useState('all')
   const [labelFilter, setLabelFilter] = useState('all')
   const [selected, setSelected] = useState<ATSEvaluation | null>(null)
+  const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
     queryKey: ['evaluations', orgId, search, jobFilter, labelFilter],
@@ -135,19 +138,19 @@ export function ATSEvaluationsPage() {
             leftIcon={<Search className="w-4 h-4" />}
             className="max-w-xs"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
           <Select
             options={jobOptions}
             className="sm:w-56"
             value={jobFilter}
-            onChange={e => setJobFilter(e.target.value)}
+            onChange={e => { setJobFilter(e.target.value); setPage(1) }}
           />
           <Select
             options={LABEL_FILTER_OPTIONS}
             className="sm:w-44"
             value={labelFilter}
-            onChange={e => setLabelFilter(e.target.value)}
+            onChange={e => { setLabelFilter(e.target.value); setPage(1) }}
           />
         </div>
 
@@ -161,7 +164,7 @@ export function ATSEvaluationsPage() {
                 No evaluations found
               </div>
             ) : (
-              data?.data.map(ev => (
+              (data?.data ?? []).slice((page - 1) * EVAL_PER_PAGE, page * EVAL_PER_PAGE).map(ev => (
                 <button
                   key={ev.id}
                   onClick={() => setSelected(ev)}
@@ -193,6 +196,10 @@ export function ATSEvaluationsPage() {
               ))
             )}
           </div>
+        )}
+
+        {!isLoading && (data?.data.length ?? 0) > EVAL_PER_PAGE && (
+          <Pagination page={page} perPage={EVAL_PER_PAGE} total={data?.data.length ?? 0} onPageChange={setPage} />
         )}
       </Card>
 
