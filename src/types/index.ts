@@ -135,6 +135,16 @@ export interface Candidate {
   latestScore?: number
   latestLabel?: string
   status: CandidateStatus
+  /** Optional custom pipeline stage (user-defined kanban column). */
+  pipelineStage?: string
+  createdAt: string
+}
+
+export interface PipelineStage {
+  id: string
+  organizationId: string
+  name: string
+  position: number
   createdAt: string
 }
 

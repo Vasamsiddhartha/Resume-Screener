@@ -38,6 +38,7 @@ export function rowToCandidate(r: Row): Candidate {
     latestScore: r.latest_score != null ? Number(r.latest_score) : undefined,
     latestLabel: r.latest_label ?? undefined,
     status: r.status,
+    pipelineStage: r.pipeline_stage ?? undefined,
     createdAt: r.created_at,
   }
 }

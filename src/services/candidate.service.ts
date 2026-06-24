@@ -96,6 +96,7 @@ export const candidateService = {
       if (payload.resumeText !== undefined) patch.resume_text = payload.resumeText
       if (payload.appliedJobId !== undefined) patch.applied_job_id = payload.appliedJobId
       if (payload.appliedJobTitle !== undefined) patch.applied_job_title = payload.appliedJobTitle
+      if (payload.pipelineStage !== undefined) patch.pipeline_stage = payload.pipelineStage || null
       const { data, error } = await supabase.from('candidates').update(patch).eq('id', id).select().single()
       if (error) throw error
       return rowToCandidate(data)

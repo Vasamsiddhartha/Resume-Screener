@@ -1,24 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, ArrowRight, ArrowLeft, FileText, RotateCcw, ThumbsUp, ThumbsDown, Trophy, SkipForward, Upload } from 'lucide-react'
+import { Loader2, ArrowRight, ArrowLeft, FileText, RotateCcw, ThumbsUp, ThumbsDown, Trophy, SkipForward, Upload, Plus, X } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
-import { Button, Modal, Textarea, Spinner } from '@/components/ui'
+import { Button, Modal, Textarea, Spinner, Input } from '@/components/ui'
 import { candidateService } from '@/services/candidate.service'
 import { jobService } from '@/services/job.service'
 import { atsService } from '@/services/ats.service'
+import { pipelineService } from '@/services/pipeline.service'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import { notify } from '@/store/notifications.store'
 import { getLabelColor, cn } from '@/lib/utils'
 import type { Candidate, CandidateStatus, Job, ATSResponsePayload, ATSLabel } from '@/types'
 
-type ColKey = 'candidates' | 'evaluated' | 'shortlisted' | 'hired'
+// Built-in funnel columns (status-driven). Custom stages are appended after these.
+type Col =
+  | { key: string; title: string; kind: 'status'; status: CandidateStatus; accent: string }
+  | { key: string; title: string; kind: 'stage'; stageId: string; accent: string }
 
-const COLUMNS: { key: ColKey; title: string; status: CandidateStatus; accent: string }[] = [
-  { key: 'candidates', title: 'Candidates', status: 'new', accent: 'bg-blue-500' },
-  { key: 'evaluated', title: 'Evaluated', status: 'reviewing', accent: 'bg-violet-500' },
-  { key: 'shortlisted', title: 'Shortlisted', status: 'shortlisted', accent: 'bg-emerald-500' },
-  { key: 'hired', title: 'Hired', status: 'hired', accent: 'bg-amber-500' },
+const DEFAULT_COLS: Col[] = [
+  { key: 'candidates', title: 'Candidates', kind: 'status', status: 'new', accent: 'bg-blue-500' },
+  { key: 'evaluated', title: 'Evaluated', kind: 'status', status: 'reviewing', accent: 'bg-violet-500' },
+  { key: 'shortlisted', title: 'Shortlisted', kind: 'status', status: 'shortlisted', accent: 'bg-emerald-500' },
+  { key: 'hired', title: 'Hired', kind: 'status', status: 'hired', accent: 'bg-amber-500' },
 ]
 
 export function PipelinePage() {
@@ -27,6 +32,8 @@ export function PipelinePage() {
   const queryClient = useQueryClient()
   const [evaluateTarget, setEvaluateTarget] = useState<Candidate | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
+  const [newStage, setNewStage] = useState('')
+  const [addingOpen, setAddingOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidates', orgId, 'pipeline'],
@@ -34,31 +41,69 @@ export function PipelinePage() {
   })
   const candidates = data?.data ?? []
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: CandidateStatus }) =>
-      candidateService.update(id, { status }),
+  const { data: stages = [] } = useQuery({
+    queryKey: ['pipeline-stages', orgId],
+    queryFn: () => pipelineService.getStages(orgId),
+  })
+  const stageNames = new Set(stages.map(s => s.name))
+  const columns: Col[] = [
+    ...DEFAULT_COLS,
+    ...stages.map(s => ({ key: `stage:${s.id}`, title: s.name, kind: 'stage' as const, stageId: s.id, accent: 'bg-slate-400' })),
+  ]
+
+  // Real-time: refetch when candidates or stages change in this org (other tabs/users).
+  useEffect(() => {
+    const sb = supabase
+    if (!sb) return
+    const ch = sb
+      .channel(`pipeline-${orgId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'candidates', filter: `organization_id=eq.${orgId}` },
+        () => queryClient.invalidateQueries({ queryKey: ['candidates'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pipeline_stages', filter: `organization_id=eq.${orgId}` },
+        () => queryClient.invalidateQueries({ queryKey: ['pipeline-stages', orgId] }))
+      .subscribe()
+    return () => { sb.removeChannel(ch) }
+  }, [orgId, queryClient])
+
+  const moveMutation = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<Candidate> }) => candidateService.update(id, patch),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['candidates'] }),
   })
 
-  function byColumn(key: ColKey) {
-    const status = COLUMNS.find(c => c.key === key)!.status
-    return candidates.filter(c => c.status === status)
+  const addStageMutation = useMutation({
+    mutationFn: (name: string) => pipelineService.createStage(orgId, name, stages.length),
+    onSuccess: (s) => { notify('info', 'Stage added', s.name); setNewStage(''); setAddingOpen(false); queryClient.invalidateQueries({ queryKey: ['pipeline-stages', orgId] }) },
+    onError: (e) => notify('info', 'Could not add stage', e instanceof Error ? e.message : 'Run migration 0010?'),
+  })
+
+  const deleteStageMutation = useMutation({
+    mutationFn: (id: string) => pipelineService.deleteStage(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pipeline-stages', orgId] }),
+  })
+
+  function itemsFor(col: Col): Candidate[] {
+    if (col.kind === 'stage') return candidates.filter(c => c.pipelineStage === col.title)
+    // status column: matching status AND not parked in a custom stage
+    return candidates.filter(c => c.status === col.status && !(c.pipelineStage && stageNames.has(c.pipelineStage)))
   }
 
-  function handleDrop(colKey: ColKey) {
+  function handleDrop(col: Col) {
     const id = dragId
     setDragId(null)
     if (!id) return
     const c = candidates.find(x => x.id === id)
     if (!c) return
 
-    // Dropping an un-evaluated candidate into "Evaluated" opens the evaluation flow
-    if (colKey === 'evaluated' && c.status === 'new') {
-      setEvaluateTarget(c)
+    if (col.kind === 'stage') {
+      if (c.pipelineStage !== col.title) moveMutation.mutate({ id, patch: { pipelineStage: col.title } })
       return
     }
-    const target = COLUMNS.find(col => col.key === colKey)!.status
-    if (target !== c.status) statusMutation.mutate({ id, status: target })
+    // Dropping an un-evaluated candidate into "Evaluated" opens the evaluation flow
+    if (col.key === 'evaluated' && c.status === 'new') { setEvaluateTarget(c); return }
+    // Move to a built-in status column → set status and clear any custom stage
+    if (c.status !== col.status || c.pipelineStage) {
+      moveMutation.mutate({ id, patch: { status: col.status, pipelineStage: '' } })
+    }
   }
 
   return (
@@ -66,19 +111,32 @@ export function PipelinePage() {
       <PageHeader
         title="Hiring Pipeline"
         description="Drag candidates across stages. Drop into Evaluated to run an ATS evaluation."
+        action={
+          addingOpen ? (
+            <div className="flex items-center gap-2">
+              <Input autoFocus placeholder="Stage name…" value={newStage} className="h-9 w-44"
+                onChange={e => setNewStage(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && newStage.trim()) addStageMutation.mutate(newStage.trim()) }} />
+              <Button size="sm" isLoading={addStageMutation.isPending} disabled={!newStage.trim()} onClick={() => addStageMutation.mutate(newStage.trim())}>Add</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setAddingOpen(false); setNewStage('') }}>Cancel</Button>
+            </div>
+          ) : (
+            <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setAddingOpen(true)}>Add Stage</Button>
+          )
+        }
       />
 
       {isLoading ? (
         <div className="flex justify-center py-24"><Spinner size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {COLUMNS.map(col => {
-            const items = byColumn(col.key)
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
+          {columns.map(col => {
+            const items = itemsFor(col)
             return (
               <div
                 key={col.key}
                 onDragOver={e => e.preventDefault()}
-                onDrop={() => handleDrop(col.key)}
+                onDrop={() => handleDrop(col)}
                 className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-transparent rounded-xl flex flex-col min-h-[200px]"
               >
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-transparent">
@@ -87,6 +145,15 @@ export function PipelinePage() {
                   <span className="ml-auto text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
                     {items.length}
                   </span>
+                  {col.kind === 'stage' && (
+                    <button
+                      onClick={() => deleteStageMutation.mutate(col.stageId)}
+                      title="Delete stage"
+                      className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="p-3 space-y-2 flex-1">
