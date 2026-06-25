@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard, Briefcase, Users, FileSearch,
@@ -10,6 +10,11 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { OrgSwitcher } from '@/components/shared/OrgSwitcher'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import { cn } from '@/lib/utils'
+import { useOrgBase } from '@/lib/orgRoutes'
+
+// Rewrite a static "/org/..." nav path onto the active org's base, e.g.
+// "/org/jobs" + base "/green-land" -> "/green-land/jobs".
+const rebase = (to: string, base: string) => base + to.replace(/^\/org/, '')
 
 type NavLeaf = { to: string; icon: LucideIcon; label: string }
 type NavGroupItem = { to?: string; icon: LucideIcon; label: string; children: { to: string; label: string }[] }
@@ -38,17 +43,23 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 // Does the current path belong to this group (its own route or a child)?
-function groupMatchesPath(item: NavGroupItem, pathname: string): boolean {
-  if (item.to && (pathname === item.to || pathname.startsWith(item.to + '/'))) return true
-  return item.children.some(c => pathname === c.to || pathname.startsWith(c.to + '/'))
+function groupMatchesPath(item: NavGroupItem, pathname: string, base: string): boolean {
+  const p = item.to ? rebase(item.to, base) : undefined
+  if (p && (pathname === p || pathname.startsWith(p + '/'))) return true
+  return item.children.some(c => {
+    const cp = rebase(c.to, base)
+    return pathname === cp || pathname.startsWith(cp + '/')
+  })
 }
 
 // Controlled accordion item — `open` is owned by the Sidebar so only one group is
 // expanded at a time and it auto-collapses when you navigate elsewhere.
 function NavGroup({ item, open, onToggle, onNavigate }: { item: NavGroupItem; open: boolean; onToggle: () => void; onNavigate: () => void }) {
   const { pathname } = useLocation()
-  const childActive = item.children.some(c => pathname.startsWith(c.to))
-  const parentActive = item.to ? pathname === item.to || pathname.startsWith(item.to + '/') : false
+  const base = useOrgBase()
+  const parentTo = item.to ? rebase(item.to, base) : undefined
+  const childActive = item.children.some(c => pathname.startsWith(rebase(c.to, base)))
+  const parentActive = parentTo ? pathname === parentTo || pathname.startsWith(parentTo + '/') : false
 
   const headerClass = cn(
     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -60,9 +71,9 @@ function NavGroup({ item, open, onToggle, onNavigate }: { item: NavGroupItem; op
   return (
     <div>
       <div className="flex items-center">
-        {item.to ? (
+        {parentTo ? (
           // Clicking the parent navigates; the route sync then expands this group.
-          <NavLink to={item.to} onClick={onNavigate} className={cn(headerClass, 'flex-1')}>
+          <NavLink to={parentTo} onClick={onNavigate} className={cn(headerClass, 'flex-1')}>
             <item.icon className="w-4 h-4 shrink-0" />
             {item.label}
           </NavLink>
@@ -81,7 +92,7 @@ function NavGroup({ item, open, onToggle, onNavigate }: { item: NavGroupItem; op
           {item.children.map(c => (
             <NavLink
               key={c.to}
-              to={c.to}
+              to={rebase(c.to, base)}
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
@@ -105,14 +116,15 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const base = useOrgBase()
 
   // Single open dropdown (accordion). Synced to the route: navigating to a page
   // outside a group collapses all groups; into a group expands just that one.
   const [openGroup, setOpenGroup] = useState<string | null>(null)
   useEffect(() => {
-    const match = NAV_ITEMS.find(it => 'children' in it && groupMatchesPath(it, pathname))
+    const match = NAV_ITEMS.find(it => 'children' in it && groupMatchesPath(it, pathname, base))
     setOpenGroup(match ? match.label : null)
-  }, [pathname])
+  }, [pathname, base])
 
   function handleLogout() {
     logout()
@@ -153,7 +165,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         {/* Quick Action */}
         <div className="px-3 py-3 border-b border-slate-100 dark:border-transparent shrink-0">
           <button
-            onClick={() => { navigate('/org/evaluations/new'); onClose() }}
+            onClick={() => { navigate(`${base}/evaluations/new`); onClose() }}
             className="w-full flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -175,7 +187,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
             ) : (
               <NavLink
                 key={item.to}
-                to={item.to}
+                to={rebase(item.to, base)}
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -197,7 +209,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         <div className="p-3 border-t border-slate-100 dark:border-transparent shrink-0">
           <div className="flex items-center gap-3 px-3 py-2">
             <button
-              onClick={() => { navigate('/org/settings'); onClose() }}
+              onClick={() => { navigate(`${base}/settings`); onClose() }}
               className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg -m-1 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Edit profile"
             >
@@ -227,6 +239,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
 function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { user } = useAuthStore()
+  const base = useOrgBase()
 
   return (
     <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-transparent flex items-center gap-4 px-6 sticky top-0 z-20">
@@ -238,7 +251,7 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
       </button>
       <div className="flex-1" />
       <NavLink
-        to="/org/pipeline"
+        to={`${base}/pipeline`}
         className={({ isActive }) => cn(
           'hidden sm:inline-flex items-center text-sm font-medium px-3 py-1.5 rounded-lg transition-colors',
           isActive
@@ -260,6 +273,22 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
 export function OrgLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const base = useOrgBase()
+  const { orgSlug } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  // Keep the URL's first segment in sync with the active organization's name.
+  // Existing "/org/..." links still resolve (":orgSlug" matches "org"); this then
+  // rewrites the slug to the real org name without touching the rest of the path.
+  useEffect(() => {
+    const realSlug = base.slice(1)
+    if (orgSlug && realSlug && orgSlug !== realSlug) {
+      const rest = location.pathname.replace(/^\/[^/]+/, '')
+      // Preserve any router state (e.g. candidateId / preset filters) across the rewrite.
+      navigate(`/${realSlug}${rest}${location.search}`, { replace: true, state: location.state })
+    }
+  }, [orgSlug, base, location.pathname, location.search, location.state, navigate])
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-transparent">

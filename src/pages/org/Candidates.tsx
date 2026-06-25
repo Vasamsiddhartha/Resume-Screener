@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
+import { PipelineTag } from '@/components/shared/PipelineTag'
 import { Card, Button, Input, Select, Modal, ConfirmModal, Spinner } from '@/components/ui'
 import { BulkImportModal, type ImportField } from '@/components/shared/BulkImportModal'
 import { candidateService } from '@/services/candidate.service'
@@ -226,6 +227,7 @@ export function CandidatesPage() {
                             {c.latestLabel && (
                               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(c.latestLabel as ATSLabel)}`}>{c.latestLabel}</span>
                             )}
+                            <PipelineTag stage={c.pipelineStage} />
                           </div>
                           <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                             <span>{c.email}</span>

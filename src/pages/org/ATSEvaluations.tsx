@@ -6,6 +6,8 @@ import { CircularProgress } from '@/components/shared/CircularProgress'
 import { Card, Button, Input, Select, Spinner, Modal, Badge, Pagination } from '@/components/ui'
 import { atsService } from '@/services/ats.service'
 import { jobService } from '@/services/job.service'
+import { candidateService } from '@/services/candidate.service'
+import { PipelineTag } from '@/components/shared/PipelineTag'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getLabelColor, formatDateTime, exportToCSV, truncateText } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
@@ -51,6 +53,13 @@ export function ATSEvaluationsPage() {
     queryKey: ['jobs', orgId, 'filter-options'],
     queryFn: () => jobService.getAll(orgId, { perPage: 100 }),
   })
+
+  // Candidate pipeline stages, so an evaluation row can show the candidate's tag.
+  const { data: candidatesData } = useQuery({
+    queryKey: ['candidates', orgId, 'pipeline-tags'],
+    queryFn: () => candidateService.getAll(orgId, { perPage: 200 }),
+  })
+  const stageByCandidate = new Map((candidatesData?.data ?? []).map(c => [c.id, c.pipelineStage]))
 
   const jobOptions = buildJobFilterOptions(jobsData?.data ?? [])
 
@@ -199,6 +208,7 @@ export function ATSEvaluationsPage() {
                       {ev.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
                       {ev.decision === 'hired' && <Badge variant="purple">Hired</Badge>}
                       {ev.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
+                      <PipelineTag stage={stageByCandidate.get(ev.candidateId)} />
                     </div>
                     <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       <span>{ev.jobTitle}</span>
