@@ -140,7 +140,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         <div className="h-14 flex items-center gap-2 px-3 border-b border-slate-100 dark:border-transparent shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {user?.organizationLogo ? (
-              <img src={user.organizationLogo} alt={user.organizationName} className="w-7 h-7 rounded-lg object-cover shrink-0 bg-white" />
+              <img src={user.organizationLogo} alt={user.organizationName} className="w-7 h-7 rounded-lg object-contain shrink-0 bg-white" />
             ) : (
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {(user?.organizationName ?? 'O').charAt(0)}

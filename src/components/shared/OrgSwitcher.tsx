@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 function OrgAvatar({ name, logo, size = 7 }: { name: string; logo?: string; size?: 6 | 7 }) {
   const dim = size === 7 ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-[10px]'
   if (logo) {
-    return <img src={logo} alt={name} className={`${dim} rounded-lg object-cover shrink-0 bg-white`} />
+    return <img src={logo} alt={name} className={`${dim} rounded-lg object-contain shrink-0 bg-white`} />
   }
   return (
     <div className={`${dim} rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white font-bold shrink-0`}>

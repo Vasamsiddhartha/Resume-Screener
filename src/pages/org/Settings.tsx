@@ -263,7 +263,7 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
         <CardHeader title="Organization Logo" description="Shown across the app and on emails" />
         <div className="flex items-center gap-4">
           {logo ? (
-            <img src={logo} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 bg-white" />
+            <img src={logo} alt="Logo" className="w-16 h-16 rounded-xl object-contain p-1 border border-slate-200 dark:border-slate-700 bg-white" />
           ) : (
             <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-2xl font-bold">
               {orgName.charAt(0)}
