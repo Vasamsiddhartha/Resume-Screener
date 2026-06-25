@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { PipelineTag } from '@/components/shared/PipelineTag'
-import { Card, Button, Input, Select, Modal, ConfirmModal, Spinner } from '@/components/ui'
+import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Spinner } from '@/components/ui'
 import { BulkImportModal, type ImportField } from '@/components/shared/BulkImportModal'
 import { candidateService } from '@/services/candidate.service'
 import { jobService } from '@/services/job.service'
@@ -163,12 +163,9 @@ export function CandidatesPage() {
         <div className="p-4 border-b border-slate-100 dark:border-transparent flex flex-col sm:flex-row flex-wrap gap-3">
           <Input placeholder="Search candidates…" leftIcon={<Search className="w-4 h-4" />}
             className="max-w-xs" value={search} onChange={e => setSearch(e.target.value)} />
-          <Select options={jobOptions} className="sm:w-52" value={jobFilter}
-            onChange={e => setJobFilter(e.target.value)} />
-          <Select options={LABEL_FILTER_OPTIONS} className="sm:w-44" value={labelFilter}
-            onChange={e => setLabelFilter(e.target.value)} />
-          <Select options={STATUS_OPTIONS} className="sm:w-40" value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)} />
+          <SearchableSelect options={jobOptions} className="sm:w-52" value={jobFilter} onChange={setJobFilter} />
+          <SearchableSelect options={LABEL_FILTER_OPTIONS} className="sm:w-44" value={labelFilter} onChange={setLabelFilter} />
+          <SearchableSelect options={STATUS_OPTIONS} className="sm:w-40" value={statusFilter} onChange={setStatusFilter} />
         </div>
 
         {isLoading ? (
@@ -269,11 +266,11 @@ export function CandidatesPage() {
           <Input label="Full Name" placeholder="Jane Doe" error={errors.name?.message} {...register('name')} />
           <Input label="Email" type="email" placeholder="jane@email.com" error={errors.email?.message} {...register('email')} />
           <Input label="Phone" type="tel" placeholder="+1 555 000 0000" error={errors.phone?.message} {...register('phone')} />
-          <Select
+          <SearchableSelect
             label="Job Title"
             options={jobPickOptions}
             value={pickedJobId}
-            onChange={e => setPickedJobId(e.target.value)}
+            onChange={setPickedJobId}
           />
           <div>
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">

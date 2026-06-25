@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Save, Building2, Sun, Moon, CheckCircle, RotateCcw } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, CardHeader, Button, Input, Select, Textarea, Toggle } from '@/components/ui'
+import { Card, CardHeader, Button, Input, SearchableSelect, Textarea, Toggle } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { useSettingsStore, DEFAULT_MODEL } from '@/store/settings.store'
 import { useThemeStore } from '@/store/theme.store'
@@ -185,13 +185,14 @@ function AppearanceTab() {
 
       <div>
         <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Density</p>
-        <Select
+        <SearchableSelect
+          searchable={false}
           options={[
             { value: 'comfortable', label: 'Comfortable' },
             { value: 'compact', label: 'Compact' },
           ]}
           value={density}
-          onChange={e => setDensity(e.target.value as 'comfortable' | 'compact')}
+          onChange={v => setDensity(v as 'comfortable' | 'compact')}
         />
       </div>
     </Card>
@@ -250,7 +251,7 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
   const [logo, setLogo] = useState(user?.organizationLogo)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoError, setLogoError] = useState('')
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       name: orgName,
       email: 'contact@techcorp.com',
@@ -348,7 +349,7 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
           <Input label="Organization Name" {...register('name')} disabled={!isAdmin} />
           <Input label="Contact Email" type="email" {...register('email')} disabled={!isAdmin} />
           <div className="grid grid-cols-2 gap-4">
-            <Select
+            <SearchableSelect
               label="Industry"
               options={[
                 { value: 'technology', label: 'Technology' },
@@ -358,11 +359,13 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
                 { value: 'education', label: 'Education' },
                 { value: 'other', label: 'Other' },
               ]}
-              {...register('industry')}
+              value={watch('industry')}
+              onChange={v => setValue('industry', v)}
               disabled={!isAdmin}
             />
-            <Select
+            <SearchableSelect
               label="Company Size"
+              searchable={false}
               options={[
                 { value: '1-10', label: '1–10 employees' },
                 { value: '11-50', label: '11–50 employees' },
@@ -370,7 +373,8 @@ function OrganizationTab({ isAdmin, orgName }: { isAdmin: boolean; orgName: stri
                 { value: '201-1000', label: '201–1000 employees' },
                 { value: '1000+', label: '1000+ employees' },
               ]}
-              {...register('size')}
+              value={watch('size')}
+              onChange={v => setValue('size', v)}
               disabled={!isAdmin}
             />
           </div>

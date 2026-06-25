@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Trophy, Mail, Briefcase, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
-import { Card, Button, Input, Select, Spinner, Modal, Badge, Pagination } from '@/components/ui'
+import { Card, Button, Input, SearchableSelect, Spinner, Modal, Badge, Pagination } from '@/components/ui'
 import { atsService } from '@/services/ats.service'
 import { jobService } from '@/services/job.service'
 import { candidateService } from '@/services/candidate.service'
@@ -170,17 +170,17 @@ export function ATSEvaluationsPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
-          <Select
+          <SearchableSelect
             options={jobOptions}
             className="sm:w-56"
             value={jobFilter}
-            onChange={e => { setJobFilter(e.target.value); setPage(1) }}
+            onChange={v => { setJobFilter(v); setPage(1) }}
           />
-          <Select
+          <SearchableSelect
             options={LABEL_FILTER_OPTIONS}
             className="sm:w-44"
             value={labelFilter}
-            onChange={e => { setLabelFilter(e.target.value); setPage(1) }}
+            onChange={v => { setLabelFilter(v); setPage(1) }}
           />
         </div>
 

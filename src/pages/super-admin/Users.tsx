@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Search, User } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, Input, Select, Badge } from '@/components/ui'
+import { Card, Input, SearchableSelect, Badge } from '@/components/ui'
 import { MOCK_USERS } from '@/mock/data'
 import { formatDate } from '@/lib/utils'
 
@@ -42,11 +42,11 @@ export function UsersPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <Select
+          <SearchableSelect
             options={ROLE_OPTIONS}
             className="w-44"
             value={roleFilter}
-            onChange={e => setRoleFilter(e.target.value)}
+            onChange={setRoleFilter}
           />
         </div>
 

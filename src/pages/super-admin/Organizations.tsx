@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Search, MoreHorizontal, Ban, Trash2, CheckCircle, Pencil } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Button, Input, Select, Modal, ConfirmModal, Card, Badge, Spinner } from '@/components/ui'
+import { Button, Input, SearchableSelect, Modal, ConfirmModal, Card, Badge, Spinner } from '@/components/ui'
 import { organizationService } from '@/services/organization.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDate } from '@/lib/utils'
@@ -81,7 +81,7 @@ export function OrganizationsPage() {
     },
   })
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { plan: 'starter' },
   })
@@ -98,6 +98,8 @@ export function OrganizationsPage() {
     register: registerEdit,
     handleSubmit: handleSubmitEdit,
     reset: resetEdit,
+    watch: watchEdit,
+    setValue: setValueEdit,
     formState: { errors: editErrors },
   } = useForm<EditFormData>({ resolver: zodResolver(editSchema) })
 
@@ -135,7 +137,7 @@ export function OrganizationsPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
-          <Select
+          <SearchableSelect
             options={[
               { value: 'all', label: 'All Status' },
               { value: 'active', label: 'Active' },
@@ -144,7 +146,7 @@ export function OrganizationsPage() {
             ]}
             className="w-40"
             value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+            onChange={v => { setStatusFilter(v); setPage(1) }}
           />
         </div>
 
@@ -272,7 +274,8 @@ export function OrganizationsPage() {
         <div className="space-y-4">
           <Input label="Organization Name" placeholder="Acme Corp" error={errors.name?.message} {...register('name')} />
           <Input label="Admin Email" type="email" placeholder="admin@acme.com" error={errors.email?.message} {...register('email')} />
-          <Select label="Subscription Plan" options={PLAN_OPTIONS} error={errors.plan?.message} {...register('plan')} />
+          <SearchableSelect label="Subscription Plan" options={PLAN_OPTIONS} error={errors.plan?.message}
+            value={watch('plan')} onChange={v => setValue('plan', v as FormData['plan'], { shouldValidate: true })} />
         </div>
       </Modal>
 
@@ -297,8 +300,10 @@ export function OrganizationsPage() {
         <div className="space-y-4">
           <Input label="Organization Name" error={editErrors.name?.message} {...registerEdit('name')} />
           <Input label="Admin Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
-          <Select label="Subscription Plan" options={PLAN_OPTIONS} error={editErrors.plan?.message} {...registerEdit('plan')} />
-          <Select label="Status" options={STATUS_EDIT_OPTIONS} error={editErrors.status?.message} {...registerEdit('status')} />
+          <SearchableSelect label="Subscription Plan" options={PLAN_OPTIONS} error={editErrors.plan?.message}
+            value={watchEdit('plan')} onChange={v => setValueEdit('plan', v as EditFormData['plan'], { shouldValidate: true })} />
+          <SearchableSelect label="Status" options={STATUS_EDIT_OPTIONS} error={editErrors.status?.message}
+            value={watchEdit('status')} onChange={v => setValueEdit('status', v as EditFormData['status'], { shouldValidate: true })} />
         </div>
       </Modal>
 

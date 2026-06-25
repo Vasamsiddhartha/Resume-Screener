@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Search, Briefcase, Archive, Trash2, Pencil, MoreHorizontal, Star, Trophy, CheckCircle, Upload } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner, Textarea, Pagination } from '@/components/ui'
+import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Badge, Spinner, Textarea, Pagination } from '@/components/ui'
 import { BulkImportModal, type ImportField } from '@/components/shared/BulkImportModal'
 import { jobService } from '@/services/job.service'
 import type { CreateJobPayload } from '@/types'
@@ -112,7 +112,7 @@ export function JobsPage() {
   const shortlistedByJob = countByJob('shortlisted')
   const hiredByJob = countByJob('hired')
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { employmentType: 'full_time' },
   })
@@ -213,8 +213,8 @@ export function JobsPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); clearSelection() }}
           />
-          <Select options={STATUS_OPTIONS} className="w-40" value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1); clearSelection() }} />
+          <SearchableSelect options={STATUS_OPTIONS} className="w-40" value={statusFilter}
+            onChange={v => { setStatusFilter(v); setPage(1); clearSelection() }} />
         </div>
 
         {/* Bulk action bar */}
@@ -398,7 +398,8 @@ export function JobsPage() {
             <Input label="Location" placeholder="e.g. Remote" error={errors.location?.message} {...register('location')} />
             <Input label="Experience Required" placeholder="e.g. 3+ years" error={errors.experienceRequired?.message} {...register('experienceRequired')} />
           </div>
-          <Select label="Employment Type" options={EMP_TYPE_OPTIONS} error={errors.employmentType?.message} {...register('employmentType')} />
+          <SearchableSelect label="Employment Type" options={EMP_TYPE_OPTIONS} error={errors.employmentType?.message}
+            value={watch('employmentType')} onChange={v => setValue('employmentType', v as FormData['employmentType'], { shouldValidate: true })} />
           <Textarea label="Job Description" rows={8} placeholder="Describe responsibilities, requirements…" error={errors.description?.message} {...register('description')} />
         </div>
       </Modal>

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { Upload, FileDown, Sheet, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
-import { Modal, Button, Select, Spinner } from '@/components/ui'
+import { Modal, Button, SearchableSelect, Spinner } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 export interface ImportField {
@@ -237,10 +237,10 @@ export function BulkImportModal({ isOpen, onClose, title, entityLabel, fields, t
                 <div className="text-sm text-slate-700 dark:text-slate-300">
                   {f.label}{f.required && <span className="text-red-500 ml-0.5">*</span>}
                 </div>
-                <Select
+                <SearchableSelect
                   options={headerOptions}
                   value={mapping[f.key] ?? ''}
-                  onChange={e => setMapping(m => ({ ...m, [f.key]: e.target.value }))}
+                  onChange={v => setMapping(m => ({ ...m, [f.key]: v }))}
                 />
               </div>
             ))}

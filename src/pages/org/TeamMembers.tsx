@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, Button, Input, Select, Modal, ConfirmModal, Badge, Spinner } from '@/components/ui'
+import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Badge, Spinner } from '@/components/ui'
 import { teamService } from '@/services/team.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDate } from '@/lib/utils'
@@ -43,7 +43,7 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
     queryFn: () => teamService.getMembers(orgId),
   })
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { role: 'recruiter' },
   })
@@ -120,15 +120,16 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
 
                 {/* Editable role — admins can change any member/invite except themselves */}
                 {isAdmin && member.id !== user?.id && (
-                  <Select
+                  <SearchableSelect
                     className="w-32 shrink-0"
+                    searchable={false}
                     options={[
                       { value: 'recruiter', label: 'Recruiter' },
                       { value: 'org_admin', label: 'Admin' },
                     ]}
                     value={member.role}
                     disabled={roleMutation.isPending}
-                    onChange={e => roleMutation.mutate({ id: member.id, role: e.target.value as 'org_admin' | 'recruiter', isPending: !member.isActive })}
+                    onChange={v => roleMutation.mutate({ id: member.id, role: v as 'org_admin' | 'recruiter', isPending: !member.isActive })}
                   />
                 )}
 
@@ -203,14 +204,16 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
             error={errors.email?.message}
             {...register('email')}
           />
-          <Select
+          <SearchableSelect
             label="Role"
+            searchable={false}
             options={[
               { value: 'recruiter', label: 'Recruiter — can upload resumes and run evaluations' },
               { value: 'org_admin', label: 'Admin — full organization access' },
             ]}
             error={errors.role?.message}
-            {...register('role')}
+            value={watch('role')}
+            onChange={v => setValue('role', v as FormData['role'], { shouldValidate: true })}
           />
         </div>
       </Modal>

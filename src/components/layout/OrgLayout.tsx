@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-rout
 import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard, Briefcase, Users, FileSearch,
-  Settings, Menu, X, LogOut, User, Plus, BarChart3, ChevronDown,
+  Settings, Menu, X, LogOut, User, Plus, ChevronDown,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
@@ -29,7 +29,6 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
-  { to: '/org/analytics', icon: BarChart3, label: 'Analytics' },
   {
     icon: Settings, label: 'Settings', children: [
       { to: '/org/settings/profile', label: 'Profile' },
