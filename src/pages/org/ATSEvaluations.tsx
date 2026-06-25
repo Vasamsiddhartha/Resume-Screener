@@ -8,6 +8,7 @@ import { atsService } from '@/services/ats.service'
 import { jobService } from '@/services/job.service'
 import { candidateService } from '@/services/candidate.service'
 import { PipelineTag } from '@/components/shared/PipelineTag'
+import { ResumeAttachment } from '@/components/shared/ResumeAttachment'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getLabelColor, formatDateTime, exportToCSV, truncateText } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
@@ -60,6 +61,7 @@ export function ATSEvaluationsPage() {
     queryFn: () => candidateService.getAll(orgId, { perPage: 200 }),
   })
   const stageByCandidate = new Map((candidatesData?.data ?? []).map(c => [c.id, c.pipelineStage]))
+  const candById = new Map((candidatesData?.data ?? []).map(c => [c.id, c]))
 
   const jobOptions = buildJobFilterOptions(jobsData?.data ?? [])
 
@@ -320,6 +322,12 @@ export function ATSEvaluationsPage() {
                 </p>
               </div>
             </div>
+
+            <ResumeAttachment
+              candidateName={selected.candidateName}
+              resumeUrl={candById.get(selected.candidateId)?.resumeUrl}
+              resumeText={candById.get(selected.candidateId)?.resumeText || selected.resumeText}
+            />
           </div>
         )}
       </Modal>

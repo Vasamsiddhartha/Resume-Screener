@@ -31,10 +31,14 @@ export const storageService = {
     return path
   },
 
-  /** Create a short-lived signed URL to view/download a stored resume. */
-  async getSignedUrl(path: string, expiresInSeconds = 3600): Promise<string> {
+  /** Create a short-lived signed URL to view/download a stored resume.
+   *  Pass `download` (true or a filename) to force a download via
+   *  Content-Disposition instead of opening inline. */
+  async getSignedUrl(path: string, expiresInSeconds = 3600, download: boolean | string = false): Promise<string> {
     if (!supabase) throw new Error('Supabase is not configured')
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresInSeconds)
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(path, expiresInSeconds, download ? { download } : undefined)
     if (error) throw error
     return data.signedUrl
   },

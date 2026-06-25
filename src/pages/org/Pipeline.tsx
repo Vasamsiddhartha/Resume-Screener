@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { notify } from '@/store/notifications.store'
 import { getLabelColor, getStatusColor, formatDate, cn } from '@/lib/utils'
 import { PipelineTag } from '@/components/shared/PipelineTag'
+import { ResumeAttachment } from '@/components/shared/ResumeAttachment'
 import type { Candidate, CandidateStatus, Job, ATSResponsePayload, ATSLabel } from '@/types'
 
 // Built-in funnel columns (status-driven). Custom stages are appended after these.
@@ -365,6 +366,12 @@ export function PipelinePage() {
                 </div>
               </div>
             )}
+
+            <ResumeAttachment
+              candidateName={detailCandidate.name}
+              resumeUrl={detailCandidate.resumeUrl}
+              resumeText={detailCandidate.resumeText}
+            />
 
             <div className="flex justify-end gap-2 pt-1">
               {detailCandidate.status === 'new' && (
