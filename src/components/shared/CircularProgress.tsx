@@ -5,13 +5,14 @@ import type { ATSLabel } from '@/types'
 interface CircularProgressProps {
   score: number
   label?: ATSLabel
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   showScore?: boolean
   animate?: boolean
   className?: string
 }
 
 const sizes = {
+  xs: { width: 44, stroke: 4, fontSize: 'text-xs', subFontSize: 'text-[8px]' },
   sm: { width: 80, stroke: 6, fontSize: 'text-lg', subFontSize: 'text-[9px]' },
   md: { width: 120, stroke: 8, fontSize: 'text-2xl', subFontSize: 'text-[10px]' },
   lg: { width: 160, stroke: 10, fontSize: 'text-3xl', subFontSize: 'text-xs' },

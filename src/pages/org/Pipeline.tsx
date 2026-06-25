@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, ArrowRight, ArrowLeft, FileText, RotateCcw, ThumbsUp, ThumbsDown, Trophy, SkipForward, Upload, Plus, X } from 'lucide-react'
+import { Loader2, ArrowRight, ArrowLeft, FileText, RotateCcw, ThumbsUp, ThumbsDown, Trophy, SkipForward, Upload, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { Button, Modal, Textarea, Spinner, Input } from '@/components/ui'
@@ -27,6 +27,9 @@ const DEFAULT_COLS: Col[] = [
   { key: 'hired', title: 'Hired', kind: 'status', status: 'hired', accent: 'bg-amber-500' },
 ]
 
+// Candidates shown per column before paginating.
+const PER_COL = 6
+
 export function PipelinePage() {
   const { user } = useAuthStore()
   const orgId = user?.organizationId ?? 'org1'
@@ -36,6 +39,20 @@ export function PipelinePage() {
   const [newStage, setNewStage] = useState('')
   const [addingOpen, setAddingOpen] = useState(false)
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null)
+  const [pageByCol, setPageByCol] = useState<Record<string, number>>({})
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll the board horizontally when a card is dragged near an edge,
+  // so off-screen columns become reachable mid-drag.
+  function handleBoardDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    const el = scrollRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const edge = 90
+    if (e.clientX < rect.left + edge) el.scrollLeft -= 18
+    else if (e.clientX > rect.right - edge) el.scrollLeft += 18
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidates', orgId, 'pipeline'],
@@ -121,15 +138,18 @@ export function PipelinePage() {
       {isLoading ? (
         <div className="flex justify-center py-24"><Spinner size="lg" /></div>
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4 items-start">
+        <div ref={scrollRef} onDragOver={handleBoardDragOver} className="flex gap-4 overflow-x-auto pb-4 items-start">
           {columns.map(col => {
             const items = itemsFor(col)
+            const totalPages = Math.max(1, Math.ceil(items.length / PER_COL))
+            const page = Math.min(pageByCol[col.key] ?? 1, totalPages)
+            const pageItems = items.slice((page - 1) * PER_COL, page * PER_COL)
             return (
               <div
                 key={col.key}
                 onDragOver={e => e.preventDefault()}
                 onDrop={() => handleDrop(col)}
-                className="w-72 shrink-0 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-transparent rounded-xl flex flex-col min-h-[200px]"
+                className="w-64 shrink-0 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-transparent rounded-xl flex flex-col min-h-[200px]"
               >
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-transparent">
                   <span className={cn('w-2 h-2 rounded-full', col.accent)} />
@@ -148,13 +168,13 @@ export function PipelinePage() {
                   )}
                 </div>
 
-                <div className="p-3 space-y-2 flex-1">
+                <div className="p-2.5 space-y-1.5 flex-1">
                   {items.length === 0 && (
                     <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-6">
                       {col.key === 'candidates' ? 'No candidates yet' : 'Drag candidates here'}
                     </p>
                   )}
-                  {items.map(c => (
+                  {pageItems.map(c => (
                     <div
                       key={c.id}
                       draggable
@@ -163,37 +183,35 @@ export function PipelinePage() {
                       onClick={() => setDetailCandidate(c)}
                       title="View candidate details"
                       className={cn(
-                        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-transparent rounded-lg p-3 cursor-pointer transition-shadow hover:shadow-sm',
+                        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-transparent rounded-lg p-2 cursor-pointer transition-shadow hover:shadow-sm',
                         dragId === c.id && 'opacity-50'
                       )}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         {c.latestScore != null ? (
-                          <CircularProgress score={c.latestScore} size="sm" />
+                          <CircularProgress score={c.latestScore} size="xs" />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0">
                             {c.name.charAt(0)}
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{c.name}</p>
+                          <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{c.name}</p>
                           {c.appliedJobTitle && (
-                            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{c.appliedJobTitle}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{c.appliedJobTitle}</p>
                           )}
                         </div>
-                      </div>
-                      {c.latestLabel && (
-                        <div className="mt-2">
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${getLabelColor(c.latestLabel as ATSLabel)}`}>
+                        {c.latestLabel && (
+                          <span className={`shrink-0 text-[9px] font-medium px-1.5 py-0.5 rounded-full ${getLabelColor(c.latestLabel as ATSLabel)}`}>
                             {c.latestLabel}
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                       {col.key === 'candidates' && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full mt-2 h-7"
+                          className="w-full mt-1.5 h-6 text-xs"
                           onClick={e => { e.stopPropagation(); setEvaluateTarget(c) }}
                         >
                           Evaluate
@@ -202,6 +220,26 @@ export function PipelinePage() {
                     </div>
                   ))}
                 </div>
+
+                {items.length > PER_COL && (
+                  <div className="flex items-center justify-between gap-2 px-2.5 py-2 border-t border-slate-200 dark:border-transparent">
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => setPageByCol(s => ({ ...s, [col.key]: page - 1 }))}
+                      className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">Page {page} / {totalPages}</span>
+                    <button
+                      disabled={page >= totalPages}
+                      onClick={() => setPageByCol(s => ({ ...s, [col.key]: page + 1 }))}
+                      className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}
