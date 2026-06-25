@@ -190,45 +190,58 @@ export function ATSEvaluationsPage() {
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
-            {data?.data.length === 0 ? (
-              <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
-                <FileSearch className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                No evaluations found
-              </div>
-            ) : (
-              (data?.data ?? []).slice((page - 1) * perPage, page * perPage).map(ev => (
-                <button
-                  key={ev.id}
-                  onClick={() => setSelected(ev)}
-                  className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
-                >
-                  <CircularProgress score={ev.score} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{ev.candidateName}</p>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(ev.label)}`}>
-                        {ev.label}
-                      </span>
-                      {ev.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
-                      {ev.decision === 'hired' && <Badge variant="purple">Hired</Badge>}
-                      {ev.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
-                      <PipelineTag stage={stageByCandidate.get(ev.candidateId)} />
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      <span>{ev.jobTitle}</span>
-                      <span>·</span>
-                      <span>by {ev.evaluatedBy}</span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{ev.score.toFixed(1)}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">{formatDateTime(ev.evaluatedAt)}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
-                </button>
-              ))
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-transparent text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  <th className="text-left font-medium py-3 px-5">Candidate</th>
+                  <th className="text-left font-medium py-3 px-3">Job</th>
+                  <th className="text-left font-medium py-3 px-3">Evaluated By</th>
+                  <th className="text-center font-medium py-3 px-3">Score</th>
+                  <th className="text-left font-medium py-3 px-3">Date</th>
+                  <th className="w-8 py-3 pr-5" />
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.data.length ?? 0) === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
+                      <FileSearch className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                      No evaluations found
+                    </td>
+                  </tr>
+                ) : (
+                  (data?.data ?? []).slice((page - 1) * perPage, page * perPage).map(ev => (
+                    <tr
+                      key={ev.id}
+                      onClick={() => setSelected(ev)}
+                      className="border-b border-slate-100 dark:border-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer"
+                    >
+                      <td className="py-3 px-5">
+                        <div className="flex items-center gap-3">
+                          <CircularProgress score={ev.score} size="xs" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">{ev.candidateName}</span>
+                              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${getLabelColor(ev.label)}`}>{ev.label}</span>
+                              {ev.decision === 'shortlisted' && <Badge variant="success">Shortlisted</Badge>}
+                              {ev.decision === 'hired' && <Badge variant="purple">Hired</Badge>}
+                              {ev.decision === 'rejected' && <Badge variant="danger">Rejected</Badge>}
+                              <PipelineTag stage={stageByCandidate.get(ev.candidateId)} />
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{ev.jobTitle}</td>
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{ev.evaluatedBy}</td>
+                      <td className="py-3 px-3 text-center font-bold text-slate-900 dark:text-slate-100">{ev.score.toFixed(1)}</td>
+                      <td className="py-3 px-3 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatDateTime(ev.evaluatedAt)}</td>
+                      <td className="py-3 pr-5 text-right"><ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 inline" /></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
 
