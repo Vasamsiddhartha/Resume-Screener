@@ -66,6 +66,34 @@
   *::after {
     border-color: var(--color-slate-200, #e2e8f0);
   }
+
+  /* Hand cursor on everything interactive; normal arrow everywhere else.
+     In @layer base so Tailwind's `cursor-*` utilities can still override per-element. */
+  button,
+  a[href],
+  label[for],
+  summary,
+  select,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="switch"],
+  [role="option"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="file"]::-webkit-file-upload-button {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"],
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 html {

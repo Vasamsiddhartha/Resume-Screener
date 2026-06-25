@@ -41,18 +41,44 @@ export function PipelinePage() {
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null)
   const [pageByCol, setPageByCol] = useState<Record<string, number>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollVel = useRef(0)        // px per frame; sign = direction, 0 = idle
+  const rafId = useRef<number | null>(null)
 
-  // Auto-scroll the board horizontally when a card is dragged near an edge,
-  // so off-screen columns become reachable mid-drag.
+  // Continuous auto-scroll: dragover only sets the velocity; a rAF loop does the
+  // actual scrolling every frame so it's smooth and fast even when the cursor is
+  // held still near the edge (not tied to dragover event frequency).
+  function tickAutoScroll() {
+    const el = scrollRef.current
+    if (el && scrollVel.current !== 0) {
+      el.scrollLeft += scrollVel.current
+      rafId.current = requestAnimationFrame(tickAutoScroll)
+    } else {
+      rafId.current = null
+    }
+  }
+  function stopAutoScroll() {
+    scrollVel.current = 0
+    if (rafId.current != null) { cancelAnimationFrame(rafId.current); rafId.current = null }
+  }
   function handleBoardDragOver(e: React.DragEvent) {
     e.preventDefault()
     const el = scrollRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
-    const edge = 90
-    if (e.clientX < rect.left + edge) el.scrollLeft -= 18
-    else if (e.clientX > rect.right - edge) el.scrollLeft += 18
+    const edge = 120     // edge zone width
+    const maxSpeed = 32  // px per frame at the very edge (~1900px/s @ 60fps)
+    const x = e.clientX
+    if (x < rect.left + edge) {
+      scrollVel.current = -Math.ceil(((rect.left + edge - x) / edge) * maxSpeed)
+    } else if (x > rect.right - edge) {
+      scrollVel.current = Math.ceil(((x - (rect.right - edge)) / edge) * maxSpeed)
+    } else {
+      scrollVel.current = 0
+    }
+    if (scrollVel.current !== 0 && rafId.current == null) tickAutoScroll()
   }
+  // Stop any running loop on unmount.
+  useEffect(() => () => stopAutoScroll(), [])
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidates', orgId, 'pipeline'],
@@ -107,6 +133,7 @@ export function PipelinePage() {
   }
 
   function handleDrop(col: Col) {
+    stopAutoScroll()
     const id = dragId
     setDragId(null)
     if (!id) return
@@ -179,7 +206,7 @@ export function PipelinePage() {
                       key={c.id}
                       draggable
                       onDragStart={() => setDragId(c.id)}
-                      onDragEnd={() => setDragId(null)}
+                      onDragEnd={() => { setDragId(null); stopAutoScroll() }}
                       onClick={() => setDetailCandidate(c)}
                       title="View candidate details"
                       className={cn(
