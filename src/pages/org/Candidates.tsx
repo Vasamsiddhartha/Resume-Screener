@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Search, UserPlus, Users, Trash2, Folder, ChevronDown, Upload } from 'lucide-react'
+import { Search, UserPlus, Users, Trash2, Folder, ChevronDown, Upload, GitBranch } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -149,6 +149,9 @@ export function CandidatesPage() {
         description="Manage and review all candidates"
         action={
           <div className="flex gap-2">
+            <Button variant="secondary" leftIcon={<GitBranch className="w-4 h-4" />} onClick={() => navigate('/org/pipeline')}>
+              Pipeline
+            </Button>
             <Button variant="secondary" leftIcon={<Upload className="w-4 h-4" />} onClick={() => setImportOpen(true)}>
               Import
             </Button>

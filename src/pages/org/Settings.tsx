@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Save, Building2, Sun, Moon, CheckCircle, RotateCcw } from 'lucide-react'
+import { Save, Building2, CheckCircle, RotateCcw } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardHeader, Button, Input, SearchableSelect, Textarea, Toggle } from '@/components/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { useSettingsStore, DEFAULT_MODEL } from '@/store/settings.store'
-import { useThemeStore } from '@/store/theme.store'
 import { authService } from '@/services/auth.service'
 import { notify } from '@/store/notifications.store'
 import { TeamMembersPage } from '@/pages/org/TeamMembers'
-import { cn } from '@/lib/utils'
 import type { NotificationPreferences } from '@/types'
 
 
@@ -41,9 +39,6 @@ export function SettingsTeamPage() {
 }
 export function SettingsNotificationsPage() {
   return <SettingsSection title="Notifications" description="Choose what we email you about"><NotificationsTab /></SettingsSection>
-}
-export function SettingsAppearancePage() {
-  return <SettingsSection title="Appearance" description="Customize how the app looks"><AppearanceTab /></SettingsSection>
 }
 export function SettingsModelPage() {
   return <SettingsSection title="Model" description="The AI endpoint used to score resumes"><ModelTab /></SettingsSection>
@@ -142,58 +137,6 @@ function NotificationsTab() {
         <p className="text-xs text-blue-700 dark:text-blue-400">
           Preferences are saved on this device. Email delivery is connected through your backend provider.
         </p>
-      </div>
-    </Card>
-  )
-}
-
-// ─── Appearance (app settings #3) ─────────────────────────────────────────────
-
-function AppearanceTab() {
-  const { theme, setTheme } = useThemeStore()
-  const { density, setDensity } = useSettingsStore()
-
-  const themeOptions = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-  ] as const
-
-  return (
-    <Card>
-      <div className="mb-6">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Theme</p>
-        <div className="grid grid-cols-2 gap-3">
-          {themeOptions.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => { setTheme(opt.value); notify('settings', 'Appearance updated', `Theme set to ${opt.label}`) }}
-              className={cn(
-                'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
-                theme === opt.value
-                  ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-              )}
-            >
-              <opt.icon className={cn('w-5 h-5', theme === opt.value ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400')} />
-              <span className={cn('text-xs font-medium', theme === opt.value ? 'text-violet-700 dark:text-violet-400' : 'text-slate-600 dark:text-slate-400')}>
-                {opt.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Density</p>
-        <SearchableSelect
-          searchable={false}
-          options={[
-            { value: 'comfortable', label: 'Comfortable' },
-            { value: 'compact', label: 'Compact' },
-          ]}
-          value={density}
-          onChange={v => setDensity(v as 'comfortable' | 'compact')}
-        />
       </div>
     </Card>
   )

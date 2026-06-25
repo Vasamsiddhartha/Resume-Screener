@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Trophy, Mail, Briefcase, ChevronRight } from 'lucide-react'
+import { Search, Plus, Download, FileSearch, ThumbsUp, ThumbsDown, Trophy, Mail, Briefcase, ChevronRight, GitBranch } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { Card, Button, Input, SearchableSelect, Spinner, Modal, Badge, Pagination } from '@/components/ui'
@@ -123,6 +123,9 @@ export function ATSEvaluationsPage() {
         description="Review and compare all candidate evaluations"
         action={
           <div className="flex gap-2">
+            <Button variant="secondary" leftIcon={<GitBranch className="w-4 h-4" />} onClick={() => navigate('/org/pipeline')}>
+              Pipeline
+            </Button>
             <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={handleExportCSV}>
               Export CSV
             </Button>

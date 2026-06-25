@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Briefcase, FileSearch, TrendingUp, Plus, ArrowRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { StatCard } from '@/components/shared/StatCard'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, CardHeader, Button, Badge } from '@/components/ui'
+import { Card, CardHeader, Button, Badge, Pagination } from '@/components/ui'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { getLabelColor } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
@@ -72,6 +73,13 @@ export function OrgDashboard() {
     }
   }).sort((a, b) => b.candidates - a.candidates)
   const candidatesPerJob = perJob.slice(0, 8).map(j => ({ name: j.title, candidates: j.candidates }))
+
+  // Job Engagement table pagination
+  const ENG_PER_PAGE = 6
+  const [engPage, setEngPage] = useState(1)
+  const engTotalPages = Math.max(1, Math.ceil(perJob.length / ENG_PER_PAGE))
+  const engPageSafe = Math.min(engPage, engTotalPages)
+  const perJobPage = perJob.slice((engPageSafe - 1) * ENG_PER_PAGE, engPageSafe * ENG_PER_PAGE)
 
   const recentEvals = evaluations.slice(0, 5)
   const topCandidates = candidates.filter(c => c.latestScore != null).slice(0, 5)
@@ -296,7 +304,7 @@ export function OrgDashboard() {
               {perJob.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-slate-400 dark:text-slate-500">No jobs yet</td></tr>
               ) : (
-                perJob.map(j => (
+                perJobPage.map(j => (
                   <tr key={j.id} className="border-b border-slate-100 dark:border-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
                     <td className="py-3 px-5">
                       <p className="font-medium text-slate-900 dark:text-slate-100">{j.title}</p>
@@ -314,6 +322,9 @@ export function OrgDashboard() {
             </tbody>
           </table>
         </div>
+        {perJob.length > ENG_PER_PAGE && (
+          <Pagination page={engPageSafe} perPage={ENG_PER_PAGE} total={perJob.length} onPageChange={setEngPage} />
+        )}
       </Card>
     </div>
   )

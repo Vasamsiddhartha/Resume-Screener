@@ -30,7 +30,7 @@ import { NotificationsPage } from '@/pages/NotificationsPage'
 import { TeamMembersPage } from '@/pages/org/TeamMembers'
 import {
   SettingsProfilePage, SettingsTeamPage, SettingsNotificationsPage,
-  SettingsAppearancePage, SettingsModelPage, SettingsOrganizationPage,
+  SettingsModelPage, SettingsOrganizationPage,
 } from '@/pages/org/Settings'
 
 export const router = createHashRouter([
@@ -97,7 +97,7 @@ export const router = createHashRouter([
           { path: 'settings/profile', element: <SettingsProfilePage /> },
           { path: 'settings/team', element: <SettingsTeamPage /> },
           { path: 'settings/notifications', element: <SettingsNotificationsPage /> },
-          { path: 'settings/appearance', element: <SettingsAppearancePage /> },
+          { path: 'settings/appearance', element: <Navigate to="profile" replace /> },
           { path: 'settings/model', element: <SettingsModelPage /> },
           { path: 'settings/organization', element: <SettingsOrganizationPage /> },
         ],

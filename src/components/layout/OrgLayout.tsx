@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -34,7 +34,6 @@ const NAV_ITEMS: NavItem[] = [
       { to: '/org/settings/profile', label: 'Profile' },
       { to: '/org/settings/team', label: 'Team Members' },
       { to: '/org/settings/notifications', label: 'Notifications' },
-      { to: '/org/settings/appearance', label: 'Appearance' },
       { to: '/org/settings/model', label: 'Model' },
       { to: '/org/settings/organization', label: 'Organization' },
     ],
@@ -112,7 +111,7 @@ function NavGroup({ item, open, onToggle, onNavigate }: { item: NavGroupItem; op
 }
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const base = useOrgBase()
@@ -124,11 +123,6 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     const match = NAV_ITEMS.find(it => 'children' in it && groupMatchesPath(it, pathname, base))
     setOpenGroup(match ? match.label : null)
   }, [pathname, base])
-
-  function handleLogout() {
-    logout()
-    navigate('/login')
-  }
 
   return (
     <>
@@ -203,69 +197,82 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
             )
           )}
         </nav>
-
-        {/* User */}
-        <div className="p-3 border-t border-slate-100 dark:border-transparent shrink-0">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <button
-              onClick={() => { navigate(`${base}/settings`); onClose() }}
-              className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg -m-1 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Edit profile"
-            >
-              <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{user?.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                  {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
-                </p>
-              </div>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
       </aside>
     </>
   )
 }
 
-function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { user } = useAuthStore()
+// Top-left profile menu: avatar (first letter) + name + role, with a dropdown of
+// Profile / Settings / Sign out (all clickable).
+function ProfileMenu() {
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
   const base = useOrgBase()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+
+  const initial = (user?.name ?? 'U').charAt(0).toUpperCase()
+  const itemClass = 'w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors'
 
   return (
-    <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-transparent flex items-center gap-4 px-6 sticky top-0 z-20">
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2.5 rounded-lg pl-1 pr-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+          {initial}
+        </div>
+        <div className="text-left hidden sm:block min-w-0">
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-tight truncate max-w-[140px]">{user?.name}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 capitalize leading-tight">
+            {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
+          </p>
+        </div>
+        <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-50">
+          <button className={itemClass} onClick={() => { setOpen(false); navigate(`${base}/settings/profile`) }}>
+            <User className="w-4 h-4" /> Profile
+          </button>
+          <button className={itemClass} onClick={() => { setOpen(false); navigate(`${base}/settings`) }}>
+            <Settings className="w-4 h-4" /> Settings
+          </button>
+          <div className="border-t border-slate-100 dark:border-transparent my-1" />
+          <button
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            onClick={() => { setOpen(false); logout(); navigate('/login') }}
+          >
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Header({ onMenuClick }: { onMenuClick: () => void }) {
+  return (
+    <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-transparent flex items-center gap-3 px-4 sm:px-6 sticky top-0 z-20">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
       >
         <Menu className="w-5 h-5" />
       </button>
+      <ProfileMenu />
       <div className="flex-1" />
-      <NavLink
-        to={`${base}/pipeline`}
-        className={({ isActive }) => cn(
-          'hidden sm:inline-flex items-center text-sm font-medium px-3 py-1.5 rounded-lg transition-colors',
-          isActive
-            ? 'bg-violet-50 dark:bg-violet-500/[0.12] text-violet-700 dark:text-violet-300'
-            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-        )}
-      >
-        Pipeline
-      </NavLink>
-      <OrgSwitcher variant="header" />
-      <span className="text-xs text-slate-500 dark:text-slate-400 capitalize hidden sm:block">
-        {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
-      </span>
-      <NotificationBell />
       <ThemeToggle />
+      <NotificationBell />
+      <OrgSwitcher variant="header" />
     </header>
   )
 }
