@@ -11,7 +11,8 @@ import { pipelineService } from '@/services/pipeline.service'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import { notify } from '@/store/notifications.store'
-import { getLabelColor, cn } from '@/lib/utils'
+import { getLabelColor, getStatusColor, formatDate, cn } from '@/lib/utils'
+import { PipelineTag } from '@/components/shared/PipelineTag'
 import type { Candidate, CandidateStatus, Job, ATSResponsePayload, ATSLabel } from '@/types'
 
 // Built-in funnel columns (status-driven). Custom stages are appended after these.
@@ -34,6 +35,7 @@ export function PipelinePage() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [newStage, setNewStage] = useState('')
   const [addingOpen, setAddingOpen] = useState(false)
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidates', orgId, 'pipeline'],
@@ -112,31 +114,14 @@ export function PipelinePage() {
         title="Hiring Pipeline"
         description="Drag candidates across stages. Drop into Evaluated to run an ATS evaluation."
         action={
-          addingOpen ? (
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-2">
-                <Input autoFocus placeholder="Stage name…" value={newStage} className="h-9 w-44"
-                  onChange={e => setNewStage(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && newStage.trim()) addStageMutation.mutate(newStage.trim()) }} />
-                <Button size="sm" isLoading={addStageMutation.isPending} disabled={!newStage.trim()} onClick={() => addStageMutation.mutate(newStage.trim())}>Add</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setAddingOpen(false); setNewStage('') }}>Cancel</Button>
-              </div>
-              {addStageMutation.error && (
-                <p className="text-xs text-red-600 dark:text-red-400 max-w-xs text-right">
-                  {addStageMutation.error instanceof Error ? addStageMutation.error.message : 'Could not add stage'}
-                </p>
-              )}
-            </div>
-          ) : (
-            <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setAddingOpen(true)}>Add Stage</Button>
-          )
+          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setAddingOpen(true)}>Add Stage</Button>
         }
       />
 
       {isLoading ? (
         <div className="flex justify-center py-24"><Spinner size="lg" /></div>
       ) : (
-        <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
+        <div className="flex gap-4 overflow-x-auto pb-4 items-start">
           {columns.map(col => {
             const items = itemsFor(col)
             return (
@@ -144,7 +129,7 @@ export function PipelinePage() {
                 key={col.key}
                 onDragOver={e => e.preventDefault()}
                 onDrop={() => handleDrop(col)}
-                className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-transparent rounded-xl flex flex-col min-h-[200px]"
+                className="w-72 shrink-0 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-transparent rounded-xl flex flex-col min-h-[200px]"
               >
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-transparent">
                   <span className={cn('w-2 h-2 rounded-full', col.accent)} />
@@ -175,8 +160,10 @@ export function PipelinePage() {
                       draggable
                       onDragStart={() => setDragId(c.id)}
                       onDragEnd={() => setDragId(null)}
+                      onClick={() => setDetailCandidate(c)}
+                      title="View candidate details"
                       className={cn(
-                        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-transparent rounded-lg p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-sm',
+                        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-transparent rounded-lg p-3 cursor-pointer transition-shadow hover:shadow-sm',
                         dragId === c.id && 'opacity-50'
                       )}
                     >
@@ -207,7 +194,7 @@ export function PipelinePage() {
                           variant="outline"
                           size="sm"
                           className="w-full mt-2 h-7"
-                          onClick={() => setEvaluateTarget(c)}
+                          onClick={e => { e.stopPropagation(); setEvaluateTarget(c) }}
                         >
                           Evaluate
                         </Button>
@@ -233,6 +220,107 @@ export function PipelinePage() {
           }}
         />
       )}
+
+      {/* Add Stage popup */}
+      <Modal
+        isOpen={addingOpen}
+        onClose={() => { setAddingOpen(false); setNewStage('') }}
+        title="Add Pipeline Stage"
+        description="Create a new column for your hiring pipeline."
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => { setAddingOpen(false); setNewStage('') }}>Cancel</Button>
+            <Button isLoading={addStageMutation.isPending} disabled={!newStage.trim()} onClick={() => addStageMutation.mutate(newStage.trim())}>
+              Add Stage
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-2">
+          <Input
+            autoFocus
+            label="Stage name"
+            placeholder="e.g. Interview, Rejected, Offer"
+            value={newStage}
+            onChange={e => setNewStage(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && newStage.trim()) addStageMutation.mutate(newStage.trim()) }}
+          />
+          {addStageMutation.error && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {addStageMutation.error instanceof Error ? addStageMutation.error.message : 'Could not add stage'}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Candidate details popup */}
+      <Modal
+        isOpen={!!detailCandidate}
+        onClose={() => setDetailCandidate(null)}
+        title="Candidate Details"
+        size="md"
+      >
+        {detailCandidate && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-4">
+              {detailCandidate.latestScore != null ? (
+                <CircularProgress score={detailCandidate.latestScore} size="md" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg font-bold text-slate-500 shrink-0">
+                  {detailCandidate.name.charAt(0)}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{detailCandidate.name}</p>
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${getStatusColor(detailCandidate.status)}`}>{detailCandidate.status}</span>
+                  {detailCandidate.latestLabel && (
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getLabelColor(detailCandidate.latestLabel as ATSLabel)}`}>{detailCandidate.latestLabel}</span>
+                  )}
+                  <PipelineTag stage={detailCandidate.pipelineStage} />
+                </div>
+              </div>
+            </div>
+
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <DetailRow label="Email" value={detailCandidate.email} />
+              <DetailRow label="Phone" value={detailCandidate.phone} />
+              <DetailRow label="Applied Job" value={detailCandidate.appliedJobTitle} />
+              <DetailRow label="Latest Score" value={detailCandidate.latestScore != null ? String(detailCandidate.latestScore) : undefined} />
+              <DetailRow label="Pipeline Stage" value={detailCandidate.pipelineStage} />
+              <DetailRow label="Added" value={detailCandidate.createdAt ? formatDate(detailCandidate.createdAt) : undefined} />
+            </dl>
+
+            {detailCandidate.resumeText && (
+              <div>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Resume</p>
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3 text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+                  {detailCandidate.resumeText}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              {detailCandidate.status === 'new' && (
+                <Button variant="secondary" onClick={() => { const c = detailCandidate; setDetailCandidate(null); setEvaluateTarget(c) }}>
+                  Evaluate
+                </Button>
+              )}
+              <Button onClick={() => setDetailCandidate(null)}>Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  )
+}
+
+function DetailRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <dt className="text-xs text-slate-400 dark:text-slate-500">{label}</dt>
+      <dd className="text-slate-800 dark:text-slate-200 break-words">{value || '—'}</dd>
     </div>
   )
 }
