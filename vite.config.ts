@@ -3,9 +3,11 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-export default defineConfig({
-  // Repo name — assets are served from https://<user>.github.io/ATS-Scanner/
-  base: '/ATS-Scanner/',
+export default defineConfig(({ command }) => ({
+  // GitHub Pages serves assets from https://<user>.github.io/ATS-Scanner/, so the
+  // base prefix is only needed for the production build. In dev the app is served
+  // from the root for clean local URLs.
+  base: command === 'build' ? '/ATS-Scanner/' : '/',
   plugins: [
     tailwindcss(),
     react(),
@@ -15,4 +17,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-})
+}))

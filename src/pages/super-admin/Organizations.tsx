@@ -20,9 +20,9 @@ type FormData = z.infer<typeof schema>
 
 const PLAN_OPTIONS = [
   { value: 'free', label: 'Free' },
-  { value: 'starter', label: 'Starter — $49/mo' },
-  { value: 'professional', label: 'Professional — $149/mo' },
-  { value: 'enterprise', label: 'Enterprise — $499/mo' },
+  { value: 'starter', label: 'Starter - $49/mo' },
+  { value: 'professional', label: 'Professional - $149/mo' },
+  { value: 'enterprise', label: 'Enterprise - $499/mo' },
 ]
 
 const STATUS_EDIT_OPTIONS = [

@@ -96,18 +96,14 @@ export function OrgSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' | 'he
 
   return (
     <>
-      {isHeader && (
-        <span className="hidden md:block text-sm text-slate-400 dark:text-slate-500 mr-1">
-          Click to switch to a different org
-        </span>
-      )}
       <div ref={ref} className={cn('relative min-w-0', isHeader ? 'shrink-0' : 'flex-1')}>
         <button
           onClick={() => setOpen(o => !o)}
+          title={isHeader ? 'Switch organization' : undefined}
           className={cn(
             'flex items-center gap-2 transition-colors min-w-0',
             isHeader
-              ? 'px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+              ? 'px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
               : 'w-full px-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800'
           )}
         >

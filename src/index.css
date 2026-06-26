@@ -44,6 +44,20 @@
   --color-surface: #ffffff;
   --color-surface-dark: #19191c;
 
+  /* ── Two-tone shell ─────────────────────────────────────────────────────────
+     The sidebar is ALWAYS deep navy (light + dark mode) so the chrome reads as a
+     distinct, branded panel against the lighter content canvas. Driven by tokens
+     so every shell surface stays in lockstep. */
+  --sidebar-bg-top:    #2d1b54;
+  --sidebar-bg-bottom: #190b33;
+  --sidebar-border:    rgba(255, 255, 255, 0.07);
+  --sidebar-heading:   rgba(255, 255, 255, 0.38);
+  --sidebar-text:      rgba(255, 255, 255, 0.62);
+  --sidebar-text-hover:rgba(255, 255, 255, 0.95);
+  --sidebar-hover-bg:  rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.12);
+  --sidebar-active-ring: rgba(255, 255, 255, 0.16);
+
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -84,6 +98,14 @@
   input[type="submit"],
   input[type="button"],
   input[type="file"]::-webkit-file-upload-button {
+    cursor: pointer;
+  }
+
+  /* Anything tagged as a clickable container (cards, rows, tiles) gets the hand
+     cursor too. Add `data-clickable` (or the `.clickable` class) to any div/li
+     that wires up onClick but isn't a native control. */
+  [data-clickable],
+  .clickable {
     cursor: pointer;
   }
 
@@ -144,6 +166,46 @@ body {
     box-shadow:
       0 1px 2px 0 rgba(0, 0, 0, 0.30),
       0 18px 36px -20px rgba(0, 0, 0, 0.85);
+  }
+
+  /* ── Branded navy shell ─────────────────────────────────────────────────────
+     One class drives the whole sidebar surface so it stays identical in light
+     and dark mode: a soft top-to-bottom navy gradient with a hairline highlight
+     down the inner edge for depth. */
+  .shell-sidebar {
+    background-image: linear-gradient(
+      180deg,
+      var(--sidebar-bg-top) 0%,
+      var(--sidebar-bg-bottom) 100%
+    );
+    border-right: 1px solid var(--sidebar-border);
+    box-shadow:
+      inset -1px 0 0 0 rgba(255, 255, 255, 0.04),
+      4px 0 24px -12px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Section heading inside the navy sidebar. */
+  .shell-heading {
+    color: var(--sidebar-heading);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Nav link states on the navy sidebar (theme-independent). */
+  .shell-link {
+    color: var(--sidebar-text);
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .shell-link:hover {
+    color: var(--sidebar-text-hover);
+    background-color: var(--sidebar-hover-bg);
+  }
+  .shell-link-active {
+    color: #ffffff;
+    background-color: var(--sidebar-active-bg);
+    box-shadow: inset 0 0 0 1px var(--sidebar-active-ring);
   }
 
   /* Subtle on-brand gradient wash for KPI / stat cards (dark only). */

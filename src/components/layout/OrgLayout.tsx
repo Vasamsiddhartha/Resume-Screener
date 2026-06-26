@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 import {
-  LayoutDashboard, Briefcase, Users, FileSearch,
-  Settings, Menu, X, LogOut, User, Plus, ChevronDown,
+  LayoutDashboard, Briefcase, Users, FileSearch, KanbanSquare,
+  Settings, Menu, X, LogOut, User, UserCog, Bell, SlidersHorizontal,
+  Building2, Plus, ChevronDown,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth.store'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { OrgSwitcher } from '@/components/shared/OrgSwitcher'
 import { NotificationBell } from '@/components/shared/NotificationBell'
+import { organizationService } from '@/services/organization.service'
 import { cn } from '@/lib/utils'
 import { useOrgBase } from '@/lib/orgRoutes'
 
@@ -17,112 +20,72 @@ import { useOrgBase } from '@/lib/orgRoutes'
 const rebase = (to: string, base: string) => base + to.replace(/^\/org/, '')
 
 type NavLeaf = { to: string; icon: LucideIcon; label: string }
-type NavGroupItem = { to?: string; icon: LucideIcon; label: string; children: { to: string; label: string }[] }
-type NavItem = NavLeaf | NavGroupItem
+type NavSection = { heading: string; items: NavLeaf[] }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: '/org/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/org/jobs', icon: Briefcase, label: 'Jobs' },
+// Grouped under headings so the purpose of each page is clear before you click it.
+// Settings sub-pages are shown expanded by default (no accordion) to use the space.
+const NAV_SECTIONS: NavSection[] = [
   {
-    to: '/org/candidates', icon: Users, label: 'Candidates', children: [
-      { to: '/org/pipeline', label: 'Pipeline' },
+    heading: 'Overview',
+    items: [
+      { to: '/org/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     ],
   },
-  { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
   {
-    icon: Settings, label: 'Settings', children: [
-      { to: '/org/settings/profile', label: 'Profile' },
-      { to: '/org/settings/team', label: 'Team Members' },
-      { to: '/org/settings/notifications', label: 'Notifications' },
-      { to: '/org/settings/model', label: 'Model' },
-      { to: '/org/settings/organization', label: 'Organization' },
+    heading: 'Recruitment',
+    items: [
+      { to: '/org/jobs', icon: Briefcase, label: 'Jobs' },
+      { to: '/org/candidates', icon: Users, label: 'Candidates' },
+      { to: '/org/pipeline', icon: KanbanSquare, label: 'Pipeline' },
+      { to: '/org/evaluations', icon: FileSearch, label: 'ATS Evaluations' },
+    ],
+  },
+  {
+    heading: 'Settings',
+    items: [
+      { to: '/org/settings/profile', icon: User, label: 'Profile' },
+      { to: '/org/settings/team', icon: UserCog, label: 'Team Members' },
+      { to: '/org/settings/notifications', icon: Bell, label: 'Notifications' },
+      { to: '/org/settings/model', icon: SlidersHorizontal, label: 'Model' },
+      { to: '/org/settings/organization', icon: Building2, label: 'Organization' },
     ],
   },
 ]
 
-// Does the current path belong to this group (its own route or a child)?
-function groupMatchesPath(item: NavGroupItem, pathname: string, base: string): boolean {
-  const p = item.to ? rebase(item.to, base) : undefined
-  if (p && (pathname === p || pathname.startsWith(p + '/'))) return true
-  return item.children.some(c => {
-    const cp = rebase(c.to, base)
-    return pathname === cp || pathname.startsWith(cp + '/')
-  })
-}
-
-// Controlled accordion item — `open` is owned by the Sidebar so only one group is
-// expanded at a time and it auto-collapses when you navigate elsewhere.
-function NavGroup({ item, open, onToggle, onNavigate }: { item: NavGroupItem; open: boolean; onToggle: () => void; onNavigate: () => void }) {
-  const { pathname } = useLocation()
-  const base = useOrgBase()
-  const parentTo = item.to ? rebase(item.to, base) : undefined
-  const childActive = item.children.some(c => pathname.startsWith(rebase(c.to, base)))
-  const parentActive = parentTo ? pathname === parentTo || pathname.startsWith(parentTo + '/') : false
-
-  const headerClass = cn(
-    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-    childActive || parentActive
-      ? 'bg-violet-50 dark:bg-violet-500/[0.12] text-violet-700 dark:text-violet-300 dark:ring-1 dark:ring-inset dark:ring-violet-400/20'
-      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200'
-  )
-
-  return (
-    <div>
-      <div className="flex items-center">
-        {parentTo ? (
-          // Clicking the parent navigates; the route sync then expands this group.
-          <NavLink to={parentTo} onClick={onNavigate} className={cn(headerClass, 'flex-1')}>
-            <item.icon className="w-4 h-4 shrink-0" />
-            {item.label}
-          </NavLink>
-        ) : (
-          <button onClick={onToggle} className={cn(headerClass, 'flex-1')}>
-            <item.icon className="w-4 h-4 shrink-0" />
-            {item.label}
-          </button>
-        )}
-        <button onClick={onToggle} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Toggle">
-          <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', open && 'rotate-180')} />
-        </button>
-      </div>
-      {open && (
-        <div className="mt-0.5 ml-4 pl-3 border-l border-slate-100 dark:border-transparent space-y-0.5">
-          {item.children.map(c => (
-            <NavLink
-              key={c.to}
-              to={rebase(c.to, base)}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  'block px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-violet-50 dark:bg-violet-500/[0.12] text-violet-700 dark:text-violet-300 dark:ring-1 dark:ring-inset dark:ring-violet-400/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200'
-                )
-              }
-            >
-              {c.label}
-            </NavLink>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+// Resolve the human title for the current route, used in the top bar.
+const TITLE_RULES: [RegExp, string][] = [
+  [/\/dashboard$/, 'Dashboard'],
+  [/\/jobs$/, 'Jobs'],
+  [/\/candidates$/, 'Candidates'],
+  [/\/pipeline$/, 'Pipeline'],
+  [/\/evaluations\/new$/, 'New Evaluation'],
+  [/\/evaluations$/, 'ATS Evaluations'],
+  [/\/settings\/profile$/, 'Profile'],
+  [/\/settings\/team$/, 'Team Members'],
+  [/\/settings\/notifications$/, 'Notifications'],
+  [/\/settings\/model$/, 'Model Settings'],
+  [/\/settings\/organization$/, 'Organization'],
+  [/\/settings/, 'Settings'],
+]
+function titleForPath(pathname: string): string {
+  return TITLE_RULES.find(([re]) => re.test(pathname))?.[1] ?? 'Dashboard'
 }
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { user } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
-  const { pathname } = useLocation()
   const base = useOrgBase()
+  const orgName = user?.organizationName ?? 'Organization'
+  const orgId = user?.organizationId
 
-  // Single open dropdown (accordion). Synced to the route: navigating to a page
-  // outside a group collapses all groups; into a group expands just that one.
-  const [openGroup, setOpenGroup] = useState<string | null>(null)
-  useEffect(() => {
-    const match = NAV_ITEMS.find(it => 'children' in it && groupMatchesPath(it, pathname, base))
-    setOpenGroup(match ? match.label : null)
-  }, [pathname, base])
+  // Active org's subscription plan, shown under the org name (e.g. "premium").
+  const { data: org } = useQuery({
+    queryKey: ['org-card', orgId],
+    queryFn: () => organizationService.getById(orgId as string),
+    enabled: !!orgId,
+  })
+
+  const initial = (user?.name ?? 'U').charAt(0).toUpperCase()
 
   return (
     <>
@@ -132,71 +95,89 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-transparent z-40 flex flex-col transition-transform duration-300',
+          'shell-sidebar fixed top-0 left-0 h-full w-64 z-40 flex flex-col transition-transform duration-300',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        {/* Current organization (static brand — switching lives in the top bar) */}
-        <div className="h-14 flex items-center gap-2 px-3 border-b border-slate-100 dark:border-transparent shrink-0">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {user?.organizationLogo ? (
-              <img src={user.organizationLogo} alt={user.organizationName} className="w-7 h-7 rounded-lg object-contain shrink-0 bg-white" />
-            ) : (
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                {(user?.organizationName ?? 'O').charAt(0)}
-              </div>
-            )}
-            <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
-              {user?.organizationName ?? 'Organization'}
-            </span>
+        {/* Organization — naked logo + name + plan, no container */}
+        <div className="flex items-center gap-3.5 px-4 pt-5 pb-3 shrink-0">
+          {user?.organizationLogo ? (
+            <img
+              src={user.organizationLogo}
+              alt={orgName}
+              className="h-11 w-auto max-w-[60px] object-contain shrink-0"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-lg bg-white/10 ring-1 ring-inset ring-white/15 flex items-center justify-center text-white text-lg font-bold shrink-0">
+              {orgName.charAt(0)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-white text-base truncate leading-tight">{orgName}</p>
+            <p className="text-xs text-white/50 capitalize leading-tight mt-0.5">{org?.plan ?? 'Workspace'}</p>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 rounded text-slate-400 hover:text-slate-600 shrink-0">
+          <button onClick={onClose} className="lg:hidden p-1 rounded text-white/60 hover:text-white shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Quick Action */}
-        <div className="px-3 py-3 border-b border-slate-100 dark:border-transparent shrink-0">
+        <div className="px-3 pt-3 shrink-0">
           <button
             onClick={() => { navigate(`${base}/evaluations/new`); onClose() }}
-            className="w-full flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-md text-sm font-medium ring-1 ring-inset ring-white/10 shadow-lg shadow-black/20 transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Evaluation
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-          {NAV_ITEMS.map(item =>
-            'children' in item ? (
-              <NavGroup
-                key={item.label}
-                item={item}
-                open={openGroup === item.label}
-                onToggle={() => setOpenGroup(g => (g === item.label ? null : item.label))}
-                onNavigate={onClose}
-              />
-            ) : (
-              <NavLink
-                key={item.to}
-                to={rebase(item.to, base)}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-violet-50 dark:bg-violet-500/[0.12] text-violet-700 dark:text-violet-300 dark:ring-1 dark:ring-inset dark:ring-violet-400/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200'
-                  )
-                }
-                onClick={() => onClose()}
-              >
-                <item.icon className="w-4 h-4 shrink-0" />
-                {item.label}
-              </NavLink>
-            )
-          )}
+        {/* Nav — sectioned with headings, all items shown (Settings expanded) */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+          {NAV_SECTIONS.map(section => (
+            <div key={section.heading} className="space-y-1">
+              <p className="shell-heading px-3 mb-2">{section.heading}</p>
+              {section.items.map(item => (
+                <NavLink
+                  key={item.to}
+                  to={rebase(item.to, base)}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium shell-link',
+                      isActive && 'shell-link-active'
+                    )
+                  }
+                  onClick={() => onClose()}
+                >
+                  <item.icon className="w-[18px] h-[18px] shrink-0" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          ))}
         </nav>
+
+        {/* Bottom — user card + logout */}
+        <div className="px-3 pt-2 pb-3 border-t border-white/[0.07] shrink-0 space-y-1">
+          <div className="flex items-center gap-3 rounded-xl bg-white/[0.05] ring-1 ring-inset ring-white/10 px-3 py-2.5">
+            <div className="w-9 h-9 rounded-full bg-violet-600 ring-1 ring-inset ring-white/15 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+              {initial}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-white text-sm truncate leading-tight">{user?.name}</p>
+              <p className="text-[11px] text-white/45 capitalize leading-tight mt-0.5">
+                {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => { logout(); navigate('/login') }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium shell-link"
+          >
+            <LogOut className="w-[18px] h-[18px] shrink-0" />
+            Logout
+          </button>
+        </div>
       </aside>
     </>
   )
@@ -226,14 +207,14 @@ function ProfileMenu() {
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-2.5 rounded-lg pl-1 pr-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
       >
-        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-          {initial}
-        </div>
-        <div className="text-left hidden sm:block min-w-0">
+        <div className="text-right hidden sm:block min-w-0">
           <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-tight truncate max-w-[140px]">{user?.name}</p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 capitalize leading-tight">
             {user?.role === 'org_admin' ? 'Admin' : 'Recruiter'}
           </p>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+          {initial}
         </div>
         <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
@@ -259,19 +240,22 @@ function ProfileMenu() {
   )
 }
 
-function Header({ onMenuClick }: { onMenuClick: () => void }) {
+function Header({ onMenuClick, title }: { onMenuClick: () => void; title: string }) {
   return (
     <header className="h-14 bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-transparent flex items-center gap-3 px-4 sm:px-6 sticky top-0 z-20">
       <button
         onClick={onMenuClick}
-        className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        className="lg:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
       >
         <Menu className="w-5 h-5" />
       </button>
+      {/* Page title (left) */}
+      <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate">{title}</h1>
       <div className="flex-1" />
+      {/* Controls (right): org context, utilities, then profile far right */}
+      <OrgSwitcher variant="header" />
       <ThemeToggle />
       <NotificationBell />
-      <OrgSwitcher variant="header" />
       <ProfileMenu />
     </header>
   )
@@ -300,7 +284,7 @@ export function OrgLayout() {
     <div className="min-h-screen bg-slate-50 dark:bg-transparent">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="lg:ml-64 flex flex-col min-h-screen">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} title={titleForPath(location.pathname)} />
         <main className="flex-1 p-6">
           <Outlet />
         </main>

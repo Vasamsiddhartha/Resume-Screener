@@ -124,7 +124,7 @@ export function BulkImportModal({ isOpen, onClose, title, entityLabel, fields, t
     }
   }
 
-  const headerOptions = [{ value: '', label: '— Not mapped —' }, ...headers.map(h => ({ value: h, label: h }))]
+  const headerOptions = [{ value: '', label: '- Not mapped -' }, ...headers.map(h => ({ value: h, label: h }))]
   const previewRows = buildMappedRows().slice(0, 8)
   const totalToImport = buildMappedRows().length
 
@@ -220,7 +220,7 @@ export function BulkImportModal({ isOpen, onClose, title, entityLabel, fields, t
           >
             <Upload className="w-8 h-8 text-slate-400 mb-3" />
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Drag &amp; drop or click to upload</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Supports .csv, .xlsx, .xls — columns auto-detected.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Supports .csv, .xlsx, .xls - columns auto-detected.</p>
             {fileName && <p className="text-xs text-violet-600 dark:text-violet-400 mt-2">{fileName}</p>}
             <input ref={fileInput} type="file" accept=".csv,.xlsx,.xls" className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
@@ -270,7 +270,7 @@ export function BulkImportModal({ isOpen, onClose, title, entityLabel, fields, t
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {previewRows.map((r, i) => (
                     <tr key={i}>
-                      {fields.map(f => <td key={f.key} className="px-3 py-2 text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{r[f.key] || <span className="text-slate-300 dark:text-slate-600">—</span>}</td>)}
+                      {fields.map(f => <td key={f.key} className="px-3 py-2 text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{r[f.key] || <span className="text-slate-300 dark:text-slate-600">-</span>}</td>)}
                     </tr>
                   ))}
                 </tbody>

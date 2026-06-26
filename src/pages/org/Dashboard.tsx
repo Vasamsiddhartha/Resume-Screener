@@ -312,10 +312,10 @@ export function OrgDashboard() {
                     </td>
                     <td className="text-center text-slate-700 dark:text-slate-300">{j.candidates}</td>
                     <td className="text-center text-slate-700 dark:text-slate-300">{j.evaluations}</td>
-                    <td className="text-center">{j.shortlisted > 0 ? <Badge variant="success">{j.shortlisted}</Badge> : <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
-                    <td className="text-center">{j.rejected > 0 ? <Badge variant="danger">{j.rejected}</Badge> : <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
-                    <td className="text-center">{j.hired > 0 ? <Badge variant="purple">{j.hired}</Badge> : <span className="text-slate-300 dark:text-slate-600">—</span>}</td>
-                    <td className="text-center font-medium text-slate-900 dark:text-slate-100">{j.evaluations > 0 ? j.avgScore.toFixed(1) : '—'}</td>
+                    <td className="text-center">{j.shortlisted > 0 ? <Badge variant="success">{j.shortlisted}</Badge> : <span className="text-slate-300 dark:text-slate-600">-</span>}</td>
+                    <td className="text-center">{j.rejected > 0 ? <Badge variant="danger">{j.rejected}</Badge> : <span className="text-slate-300 dark:text-slate-600">-</span>}</td>
+                    <td className="text-center">{j.hired > 0 ? <Badge variant="purple">{j.hired}</Badge> : <span className="text-slate-300 dark:text-slate-600">-</span>}</td>
+                    <td className="text-center font-medium text-slate-900 dark:text-slate-100">{j.evaluations > 0 ? j.avgScore.toFixed(1) : '-'}</td>
                   </tr>
                 ))
               )}

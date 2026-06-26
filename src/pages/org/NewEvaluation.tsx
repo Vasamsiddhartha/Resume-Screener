@@ -123,7 +123,7 @@ export function NewEvaluationPage() {
         if (!text.trim()) {
           setExtractError(
             isPdf
-              ? 'No text could be extracted — this looks like a scanned or image-only PDF. Please upload a text-based PDF, or paste the resume text below.'
+              ? 'No text could be extracted - this looks like a scanned or image-only PDF. Please upload a text-based PDF, or paste the resume text below.'
               : 'No text could be extracted from this document. Please paste the resume text below.'
           )
           return
@@ -213,7 +213,7 @@ export function NewEvaluationPage() {
         queryClient.invalidateQueries({ queryKey: ['candidates'] })
         queryClient.invalidateQueries({ queryKey: ['org-dashboard'] })
 
-        notify('evaluation', 'Evaluation completed', `${name} — ${response.label} (${response.score.toFixed(1)})`)
+        notify('evaluation', 'Evaluation completed', `${name} - ${response.label} (${response.score.toFixed(1)})`)
 
         if (notifications.evaluationCompleted && user?.email && mailService.isEnabled()) {
           mailService.send({
@@ -453,7 +453,7 @@ export function NewEvaluationPage() {
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                   <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                    We auto-filled the candidate details from the resume — please double-check and edit if needed.
+                    We auto-filled the candidate details from the resume - please double-check and edit if needed.
                   </p>
                 </div>
               )}
@@ -565,7 +565,7 @@ export function NewEvaluationPage() {
                       <div className="flex justify-between text-xs mb-1.5">
                         <span className="text-slate-600 dark:text-slate-400 font-medium">ATS Score</span>
                         <span className="font-semibold text-slate-900 dark:text-slate-100">
-                          {typeof result.score === 'number' ? result.score.toFixed(2) : '—'}
+                          {typeof result.score === 'number' ? result.score.toFixed(2) : '-'}
                         </span>
                       </div>
                       <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">

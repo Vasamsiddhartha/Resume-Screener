@@ -10,7 +10,7 @@ export function SuperAdminSettings() {
       supportEmail: 'support@atsscorer.io',
       maxOrgsPerPlan: '100',
       huggingFaceModel: 'username/ats-scorer-model',
-      welcomeMessage: 'Welcome to Resume Screener — the AI-powered resume screening platform.',
+      welcomeMessage: 'Welcome to Resume Screener - the AI-powered resume screening platform.',
     },
   })
 

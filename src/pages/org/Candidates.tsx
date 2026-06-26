@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { PipelineTag } from '@/components/shared/PipelineTag'
-import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Spinner } from '@/components/ui'
+import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Spinner, Pagination } from '@/components/ui'
 import { BulkImportModal, type ImportField } from '@/components/shared/BulkImportModal'
 import { candidateService } from '@/services/candidate.service'
 import { jobService } from '@/services/job.service'
@@ -56,6 +56,8 @@ export function CandidatesPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidates', orgId, search, statusFilter, jobFilter, labelFilter],
@@ -165,10 +167,10 @@ export function CandidatesPage() {
       <Card padding="none">
         <div className="p-4 border-b border-slate-100 dark:border-transparent flex flex-col sm:flex-row flex-wrap gap-3">
           <Input placeholder="Search candidates…" leftIcon={<Search className="w-4 h-4" />}
-            className="max-w-xs" value={search} onChange={e => setSearch(e.target.value)} />
-          <SearchableSelect options={jobOptions} className="sm:w-52" value={jobFilter} onChange={setJobFilter} />
-          <SearchableSelect options={LABEL_FILTER_OPTIONS} className="sm:w-44" value={labelFilter} onChange={setLabelFilter} />
-          <SearchableSelect options={STATUS_OPTIONS} className="sm:w-40" value={statusFilter} onChange={setStatusFilter} />
+            className="max-w-xs" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
+          <SearchableSelect options={jobOptions} className="sm:w-52" value={jobFilter} onChange={v => { setJobFilter(v); setPage(1) }} />
+          <SearchableSelect options={LABEL_FILTER_OPTIONS} className="sm:w-44" value={labelFilter} onChange={v => { setLabelFilter(v); setPage(1) }} />
+          <SearchableSelect options={STATUS_OPTIONS} className="sm:w-40" value={statusFilter} onChange={v => { setStatusFilter(v); setPage(1) }} />
         </div>
 
         {isLoading ? (
@@ -181,7 +183,7 @@ export function CandidatesPage() {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
             {Object.entries(
-              (data?.data ?? []).reduce<Record<string, Candidate[]>>((acc, c) => {
+              (data?.data ?? []).slice((page - 1) * perPage, page * perPage).reduce<Record<string, Candidate[]>>((acc, c) => {
                 const key = c.appliedJobTitle?.trim() || 'No Job Title'
                 ;(acc[key] ||= []).push(c)
                 return acc
@@ -195,12 +197,14 @@ export function CandidatesPage() {
                     {/* Folder header */}
                     <button
                       onClick={() => setCollapsed(s => ({ ...s, [jobTitle]: !s[jobTitle] }))}
-                      className="w-full flex items-center gap-3 px-5 py-3 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-colors text-left"
                     >
                       <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
-                      <Folder className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0" />
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{jobTitle}</span>
-                      <span className="text-xs text-slate-400 dark:text-slate-500 bg-slate-200/70 dark:bg-slate-700/70 rounded-full px-2 py-0.5">{list.length}</span>
+                      <span className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-500/15 ring-1 ring-inset ring-violet-200/60 dark:ring-violet-400/20 flex items-center justify-center shrink-0">
+                        <Folder className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{jobTitle}</span>
+                      <span className="ml-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-500/15 rounded-full px-2 py-0.5 shrink-0">{list.length}</span>
                     </button>
 
                     {/* Candidates in this folder */}
@@ -249,6 +253,14 @@ export function CandidatesPage() {
                 )
               })}
           </div>
+        )}
+
+        {!isLoading && (data?.data.length ?? 0) > 0 && (
+          <Pagination
+            page={page} perPage={perPage} total={data?.data.length ?? 0}
+            onPageChange={setPage}
+            onPerPageChange={p => { setPerPage(p); setPage(1) }}
+          />
         )}
       </Card>
 

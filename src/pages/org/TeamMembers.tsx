@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Badge, Spinner } from '@/components/ui'
+import { Card, Button, Input, SearchableSelect, Modal, ConfirmModal, Badge, Spinner, Pagination } from '@/components/ui'
 import { teamService } from '@/services/team.service'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDate } from '@/lib/utils'
@@ -26,6 +26,8 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
   const [copiedEmail, setCopiedEmail] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
 
   function copyInviteLink(email: string, role: string) {
     const p = new URLSearchParams({ email })
@@ -95,7 +97,7 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
-            {members.map(member => (
+            {members.slice((page - 1) * perPage, page * perPage).map(member => (
               <div key={member.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
                 <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
                   {member.role === 'org_admin' ? (
@@ -169,6 +171,14 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
             ))}
           </div>
         )}
+
+        {!isLoading && members.length > 0 && (
+          <Pagination
+            page={page} perPage={perPage} total={members.length}
+            onPageChange={setPage}
+            onPerPageChange={p => { setPerPage(p); setPage(1) }}
+          />
+        )}
       </Card>
 
       {/* Invite Modal */}
@@ -208,8 +218,8 @@ export function TeamMembersPage({ embedded = false }: { embedded?: boolean } = {
             label="Role"
             searchable={false}
             options={[
-              { value: 'recruiter', label: 'Recruiter — can upload resumes and run evaluations' },
-              { value: 'org_admin', label: 'Admin — full organization access' },
+              { value: 'recruiter', label: 'Recruiter - can upload resumes and run evaluations' },
+              { value: 'org_admin', label: 'Admin - full organization access' },
             ]}
             error={errors.role?.message}
             value={watch('role')}

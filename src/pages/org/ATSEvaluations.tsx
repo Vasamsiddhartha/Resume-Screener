@@ -40,6 +40,8 @@ export function ATSEvaluationsPage() {
   const [selected, setSelected] = useState<ATSEvaluation | null>(null)
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(EVAL_PER_PAGE)
+  // Bulk row selection (checkbox column + select-all)
+  const [checked, setChecked] = useState<Set<string>>(new Set())
 
   // Auto-open a candidate's evaluation when navigated here from the Candidates list.
   const navState = (useLocation().state ?? {}) as { candidateId?: string; candidateName?: string }
@@ -65,6 +67,16 @@ export function ATSEvaluationsPage() {
 
   const jobOptions = buildJobFilterOptions(jobsData?.data ?? [])
 
+  // Rows visible on the current page (selection + select-all operate on these).
+  const evalsOnPage = (data?.data ?? []).slice((page - 1) * perPage, page * perPage)
+  function toggleCheck(id: string) {
+    setChecked(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+  function toggleCheckAll() {
+    setChecked(s => s.size === evalsOnPage.length && evalsOnPage.length > 0 ? new Set() : new Set(evalsOnPage.map(e => e.id)))
+  }
+  function clearChecked() { setChecked(new Set()) }
+
   // Open the matching evaluation modal once, when arriving from a candidate click.
   useEffect(() => {
     if (autoOpenedRef.current) return
@@ -83,10 +95,23 @@ export function ATSEvaluationsPage() {
     mutationFn: ({ id, decision }: { id: string; decision: EvaluationDecision }) =>
       atsService.setDecision(id, decision),
     onSuccess: (updated, vars) => {
-      notify('candidate', `Candidate ${vars.decision}`, `${updated.candidateName} — ${updated.jobTitle}`)
+      notify('candidate', `Candidate ${vars.decision}`, `${updated.candidateName} - ${updated.jobTitle}`)
       queryClient.invalidateQueries({ queryKey: ['evaluations'] })
       queryClient.invalidateQueries({ queryKey: ['candidates'] })
       setSelected(updated)
+    },
+  })
+
+  // Apply a decision to every checked row.
+  const bulkDecisionMutation = useMutation({
+    mutationFn: async ({ ids, decision }: { ids: string[]; decision: EvaluationDecision }) => {
+      for (const id of ids) await atsService.setDecision(id, decision)
+    },
+    onSuccess: (_d, vars) => {
+      notify('candidate', `Candidates ${vars.decision}`, `${vars.ids.length} evaluation${vars.ids.length === 1 ? '' : 's'} updated`)
+      queryClient.invalidateQueries({ queryKey: ['evaluations'] })
+      queryClient.invalidateQueries({ queryKey: ['candidates'] })
+      clearChecked()
     },
   })
 
@@ -100,10 +125,10 @@ export function ATSEvaluationsPage() {
     else scoreBins[4].count++
   })
 
-  function handleExportCSV() {
-    if (!data?.data) return
+  function exportRows(rows: ATSEvaluation[], filename: string) {
+    if (rows.length === 0) return
     exportToCSV(
-      data.data.map(ev => ({
+      rows.map(ev => ({
         Candidate: ev.candidateName,
         Email: ev.candidateEmail,
         Job: ev.jobTitle,
@@ -112,8 +137,12 @@ export function ATSEvaluationsPage() {
         Date: ev.evaluatedAt,
         'Evaluated By': ev.evaluatedBy,
       })),
-      'ats-evaluations'
+      filename
     )
+  }
+  function handleExportCSV() { exportRows(data?.data ?? [], 'ats-evaluations') }
+  function handleExportSelected() {
+    exportRows((data?.data ?? []).filter(e => checked.has(e.id)), 'ats-evaluations-selected')
   }
 
   return (
@@ -171,21 +200,40 @@ export function ATSEvaluationsPage() {
             leftIcon={<Search className="w-4 h-4" />}
             className="max-w-xs"
             value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            onChange={e => { setSearch(e.target.value); setPage(1); clearChecked() }}
           />
           <SearchableSelect
             options={jobOptions}
             className="sm:w-56"
             value={jobFilter}
-            onChange={v => { setJobFilter(v); setPage(1) }}
+            onChange={v => { setJobFilter(v); setPage(1); clearChecked() }}
           />
           <SearchableSelect
             options={LABEL_FILTER_OPTIONS}
             className="sm:w-44"
             value={labelFilter}
-            onChange={v => { setLabelFilter(v); setPage(1) }}
+            onChange={v => { setLabelFilter(v); setPage(1); clearChecked() }}
           />
         </div>
+
+        {/* Bulk action bar */}
+        {checked.size > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 bg-violet-50 dark:bg-violet-500/10 border-b border-violet-100 dark:border-transparent">
+            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">{checked.size} selected</span>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" leftIcon={<ThumbsUp className="w-3.5 h-3.5" />}
+                isLoading={bulkDecisionMutation.isPending && bulkDecisionMutation.variables?.decision === 'shortlisted'}
+                onClick={() => bulkDecisionMutation.mutate({ ids: [...checked], decision: 'shortlisted' })}>Shortlist</Button>
+              <Button variant="secondary" size="sm" leftIcon={<ThumbsDown className="w-3.5 h-3.5" />}
+                className="text-red-600 dark:text-red-400"
+                isLoading={bulkDecisionMutation.isPending && bulkDecisionMutation.variables?.decision === 'rejected'}
+                onClick={() => bulkDecisionMutation.mutate({ ids: [...checked], decision: 'rejected' })}>Reject</Button>
+              <Button variant="secondary" size="sm" leftIcon={<Download className="w-3.5 h-3.5" />}
+                onClick={handleExportSelected}>Export</Button>
+              <Button variant="ghost" size="sm" onClick={clearChecked}>Clear</Button>
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
@@ -194,7 +242,16 @@ export function ATSEvaluationsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-transparent text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  <th className="text-left font-medium py-3 px-5">Candidate</th>
+                  <th className="w-10 py-3 pl-5 pr-2">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500 cursor-pointer align-middle"
+                      checked={checked.size === evalsOnPage.length && evalsOnPage.length > 0}
+                      ref={el => { if (el) el.indeterminate = checked.size > 0 && checked.size < evalsOnPage.length }}
+                      onChange={toggleCheckAll}
+                    />
+                  </th>
+                  <th className="text-left font-medium py-3 px-3">Candidate</th>
                   <th className="text-left font-medium py-3 px-3">Job</th>
                   <th className="text-left font-medium py-3 px-3">Evaluated By</th>
                   <th className="text-center font-medium py-3 px-3">Score</th>
@@ -205,19 +262,27 @@ export function ATSEvaluationsPage() {
               <tbody>
                 {(data?.data.length ?? 0) === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
+                    <td colSpan={7} className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
                       <FileSearch className="w-10 h-10 mx-auto mb-3 opacity-30" />
                       No evaluations found
                     </td>
                   </tr>
                 ) : (
-                  (data?.data ?? []).slice((page - 1) * perPage, page * perPage).map(ev => (
+                  evalsOnPage.map(ev => (
                     <tr
                       key={ev.id}
                       onClick={() => setSelected(ev)}
-                      className="border-b border-slate-100 dark:border-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer"
+                      className={`border-b border-slate-100 dark:border-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer ${checked.has(ev.id) ? 'bg-violet-50/40 dark:bg-violet-500/[0.06]' : ''}`}
                     >
-                      <td className="py-3 px-5">
+                      <td className="py-3 pl-5 pr-2 align-middle" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500 cursor-pointer align-middle"
+                          checked={checked.has(ev.id)}
+                          onChange={() => toggleCheck(ev.id)}
+                        />
+                      </td>
+                      <td className="py-3 px-3">
                         <div className="flex items-center gap-3">
                           <CircularProgress score={ev.score} size="xs" />
                           <div className="min-w-0">

@@ -157,9 +157,9 @@ export function JobsPage() {
   async function importJobs(rows: Record<string, string>[]): Promise<number> {
     const payload: CreateJobPayload[] = rows.map(r => ({
       title: r.title,
-      department: r.department || '—',
-      location: r.location || '—',
-      experienceRequired: r.experienceRequired || '—',
+      department: r.department || '-',
+      location: r.location || '-',
+      experienceRequired: r.experienceRequired || '-',
       employmentType: normalizeEmploymentType(r.employmentType || ''),
       description: r.description || r.title,
       organizationName: user?.organizationName,

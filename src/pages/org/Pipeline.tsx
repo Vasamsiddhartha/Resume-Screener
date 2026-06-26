@@ -392,7 +392,7 @@ function DetailRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
       <dt className="text-xs text-slate-400 dark:text-slate-500">{label}</dt>
-      <dd className="text-slate-800 dark:text-slate-200 break-words">{value || '—'}</dd>
+      <dd className="text-slate-800 dark:text-slate-200 break-words">{value || '-'}</dd>
     </div>
   )
 }
@@ -480,7 +480,7 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
           resumeText,
           ...(resumePath ? { resumeUrl: resumePath } : {}),
         })
-        notify('evaluation', 'Evaluation completed', `${candidate.name} — ${response.label} (${response.score.toFixed(1)})`)
+        notify('evaluation', 'Evaluation completed', `${candidate.name} - ${response.label} (${response.score.toFixed(1)})`)
       } catch (saveErr) {
         console.warn('[Pipeline] save failed:', saveErr)
       }
@@ -497,12 +497,12 @@ function EvaluateModal({ candidate, orgId, onClose, onDone }: {
   })
 
   return (
-    <Modal isOpen onClose={onClose} title={`Evaluate — ${candidate.name}`} size="lg">
+    <Modal isOpen onClose={onClose} title={`Evaluate - ${candidate.name}`} size="lg">
       {/* Resume */}
       {step === 'resume' && (
         <div className="space-y-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {candidate.resumeText ? 'Using the resume on file — edit or replace below.' : 'Upload or paste the resume.'}
+            {candidate.resumeText ? 'Using the resume on file - edit or replace below.' : 'Upload or paste the resume.'}
           </p>
           <label className="flex items-center gap-2 text-sm text-violet-600 dark:text-violet-400 cursor-pointer">
             <Upload className="w-4 h-4" />
