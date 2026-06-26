@@ -65,13 +65,13 @@ function useSupabaseSession() {
 
 export default function App() {
   const ready = useSupabaseSession()
-  // Show the brand preloader once per browser session (on first full load).
-  const [showPreloader, setShowPreloader] = useState(() => !sessionStorage.getItem('rs-preloaded'))
+  // Show the brand preloader on every full page load.
+  const [showPreloader, setShowPreloader] = useState(true)
 
   return (
     <>
       {showPreloader && (
-        <Preloader onDone={() => { sessionStorage.setItem('rs-preloaded', '1'); setShowPreloader(false) }} />
+        <Preloader onDone={() => setShowPreloader(false)} />
       )}
 
       {!ready ? (
