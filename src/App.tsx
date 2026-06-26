@@ -6,7 +6,6 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { buildUserFromSupabase } from '@/services/supabaseAuth'
 import { useAuthStore } from '@/store/auth.store'
 import { PageSpinner } from '@/components/ui'
-import { Preloader } from '@/components/shared/Preloader'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,24 +64,18 @@ function useSupabaseSession() {
 
 export default function App() {
   const ready = useSupabaseSession()
-  // Show the brand preloader on every full page load.
-  const [showPreloader, setShowPreloader] = useState(true)
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <PageSpinner />
+      </div>
+    )
+  }
 
   return (
-    <>
-      {showPreloader && (
-        <Preloader onDone={() => setShowPreloader(false)} />
-      )}
-
-      {!ready ? (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-          <PageSpinner />
-        </div>
-      ) : (
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      )}
-    </>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   )
 }
