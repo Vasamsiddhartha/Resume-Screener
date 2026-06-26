@@ -193,3 +193,14 @@ body {
 .scrollbar-thin {
   scrollbar-width: thin;
 }
+
+/* Recharts adds a focusable surface (tabindex) that shows a black focus box on
+   click — suppress that outline on the chart wrapper/surface and their children. */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-wrapper *:focus,
+.recharts-wrapper svg:focus {
+  outline: none !important;
+}
