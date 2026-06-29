@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from './Button'
 import { Spinner } from './Spinner'
+import { SearchableSelect } from './SearchableSelect'
 
 interface Column<T> {
   key: string
@@ -112,16 +113,16 @@ export function Pagination({ page, perPage, total, onPageChange, onPerPageChange
           <span className="font-medium text-slate-700 dark:text-slate-300">{total}</span> results
         </p>
         {onPerPageChange && (
-          <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-            Rows per page
-            <select
-              value={perPage}
-              onChange={e => onPerPageChange(Number(e.target.value))}
-              className="h-7 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs px-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-            >
-              {perPageOptions.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </label>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <span>Rows per page</span>
+            <SearchableSelect
+              searchable={false}
+              className="w-[4.75rem]"
+              options={perPageOptions.map(o => ({ value: String(o), label: String(o) }))}
+              value={String(perPage)}
+              onChange={v => onPerPageChange(Number(v))}
+            />
+          </div>
         )}
       </div>
       <div className="flex items-center gap-1">
