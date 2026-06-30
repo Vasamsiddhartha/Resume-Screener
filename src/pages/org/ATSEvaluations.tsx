@@ -11,6 +11,7 @@ import { PipelineTag } from '@/components/shared/PipelineTag'
 import { ResumeAttachment } from '@/components/shared/ResumeAttachment'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getLabelColor, formatDateTime, exportToCSV, truncateText } from '@/lib/utils'
+import { getScoreGuidance } from '@/lib/atsGuidance'
 import { useAuthStore } from '@/store/auth.store'
 import { LABEL_FILTER_OPTIONS, buildJobFilterOptions } from '@/lib/filters'
 import { notify } from '@/store/notifications.store'
@@ -134,6 +135,9 @@ export function ATSEvaluationsPage() {
         Job: ev.jobTitle,
         Score: ev.score,
         Label: ev.label,
+        'Domain Compatibility': ev.domainCompatibility != null ? Math.round(ev.domainCompatibility) : '',
+        'Skill Depth': ev.skillDepth != null ? Math.round(ev.skillDepth) : '',
+        'Focus Area': (ev.domainCompatibility != null || ev.skillDepth != null) ? getScoreGuidance(ev.score).heading : '',
         Date: ev.evaluatedAt,
         'Evaluated By': ev.evaluatedBy,
       })),
@@ -255,6 +259,9 @@ export function ATSEvaluationsPage() {
                   <th className="text-left font-medium py-3 px-3">Job</th>
                   <th className="text-left font-medium py-3 px-3">Evaluated By</th>
                   <th className="text-center font-medium py-3 px-3">Score</th>
+                  <th className="text-center font-medium py-3 px-3">Domain Compat.</th>
+                  <th className="text-center font-medium py-3 px-3">Skill Depth</th>
+                  <th className="text-left font-medium py-3 px-3">Focus Area</th>
                   <th className="text-left font-medium py-3 px-3">Date</th>
                   <th className="w-8 py-3 pr-5" />
                 </tr>
@@ -262,7 +269,7 @@ export function ATSEvaluationsPage() {
               <tbody>
                 {(data?.data.length ?? 0) === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
+                    <td colSpan={10} className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
                       <FileSearch className="w-10 h-10 mx-auto mb-3 opacity-30" />
                       No evaluations found
                     </td>
@@ -300,6 +307,17 @@ export function ATSEvaluationsPage() {
                       <td className="py-3 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{ev.jobTitle}</td>
                       <td className="py-3 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{ev.evaluatedBy}</td>
                       <td className="py-3 px-3 text-center font-bold text-slate-900 dark:text-slate-100">{ev.score.toFixed(1)}</td>
+                      <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-300">
+                        {ev.domainCompatibility != null ? `${Math.round(ev.domainCompatibility)}%` : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                      </td>
+                      <td className="py-3 px-3 text-center text-slate-600 dark:text-slate-300">
+                        {ev.skillDepth != null ? `${Math.round(ev.skillDepth)}%` : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                      </td>
+                      <td className="py-3 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        {(ev.domainCompatibility != null || ev.skillDepth != null)
+                          ? getScoreGuidance(ev.score).heading
+                          : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                      </td>
                       <td className="py-3 px-3 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">{formatDateTime(ev.evaluatedAt)}</td>
                       <td className="py-3 pr-5 text-right"><ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 inline" /></td>
                     </tr>
@@ -394,6 +412,40 @@ export function ATSEvaluationsPage() {
                 <p className="text-xs text-slate-400 dark:text-slate-500">by {selected.evaluatedBy}</p>
               </div>
             </div>
+
+            {(selected.domainCompatibility != null || selected.skillDepth != null) && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Domain Compatibility</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {selected.domainCompatibility != null ? `${Math.round(selected.domainCompatibility)}%` : '—'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Skill Depth</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {selected.skillDepth != null ? `${Math.round(selected.skillDepth)}%` : '—'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {(selected.domainCompatibility != null || selected.skillDepth != null) && (() => {
+              const g = getScoreGuidance(selected.score)
+              return (
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{g.heading}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">{g.description}</p>
+                  <ul className="space-y-1">
+                    {g.items.map((item, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        <span className="text-blue-500 shrink-0">•</span><span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })()}
 
             <div>
               <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Resume excerpt</p>

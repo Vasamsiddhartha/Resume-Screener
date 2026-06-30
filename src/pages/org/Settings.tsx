@@ -145,9 +145,10 @@ function NotificationsTab() {
 // ─── Model — change the scoring model endpoint (default = existing) ───────────
 
 function ModelTab() {
-  const { fallbackModelUrl, setFallbackModelUrl } = useSettingsStore()
+  const { scoringMode, setScoringMode, fallbackModelUrl, setFallbackModelUrl } = useSettingsStore()
   const [value, setValue] = useState(fallbackModelUrl)
   const [saved, setSaved] = useState(false)
+  const isRemote = scoringMode === 'remote'
 
   function save() {
     setFallbackModelUrl(value)
@@ -156,32 +157,65 @@ function ModelTab() {
     setTimeout(() => setSaved(false), 2500)
   }
 
+  function changeMode(mode: string) {
+    const next = mode === 'remote' ? 'remote' : 'local'
+    setScoringMode(next)
+    notify('settings', 'Scoring engine updated', next === 'local'
+      ? 'Resumes are now scored locally in your browser'
+      : 'Resumes are now scored via the hosted endpoint')
+  }
+
   return (
     <Card>
-      <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Primary model</p>
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{DEFAULT_MODEL.name}</p>
-      </div>
-
       <div className="space-y-4">
-        <Input
-          label="Fallback model"
-          placeholder=""
-          hint="Optional. If the primary model is unavailable, this endpoint is used automatically. Takes effect immediately. Must return { ats_score, label }."
-          value={value}
-          onChange={e => setValue(e.target.value)}
+        <SearchableSelect
+          label="Scoring engine"
+          value={scoringMode}
+          onChange={changeMode}
+          options={[
+            { value: 'local', label: 'Local — in-browser AI (recommended)' },
+            { value: 'remote', label: 'Remote — hosted endpoint' },
+          ]}
         />
-        <div className="flex items-center gap-3 justify-end">
-          {saved && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" /> Saved
-            </span>
+
+        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          {isRemote ? (
+            <>
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Primary model</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{DEFAULT_MODEL.name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Resumes are scored by calling this hosted endpoint on each evaluation.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Local engine</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Semantic + Domain models (nbk-ats-v1)</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Runs entirely in your browser — no resume data leaves the device. Models download once on first use, then every evaluation is offline.</p>
+            </>
           )}
-          <Button variant="ghost" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={() => { setValue(''); setFallbackModelUrl('') }} disabled={!value && !fallbackModelUrl}>
-            Clear
-          </Button>
-          <Button leftIcon={<Save className="w-4 h-4" />} onClick={save}>Save</Button>
         </div>
+
+        {isRemote && (
+          <>
+            <Input
+              label="Fallback model"
+              placeholder=""
+              hint="Optional. If the primary endpoint is unavailable, this endpoint is used automatically. Takes effect immediately. Must return { ats_score, label }."
+              value={value}
+              onChange={e => setValue(e.target.value)}
+            />
+            <div className="flex items-center gap-3 justify-end">
+              {saved && (
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5" /> Saved
+                </span>
+              )}
+              <Button variant="ghost" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={() => { setValue(''); setFallbackModelUrl('') }} disabled={!value && !fallbackModelUrl}>
+                Clear
+              </Button>
+              <Button leftIcon={<Save className="w-4 h-4" />} onClick={save}>Save</Button>
+            </div>
+          </>
+        )}
       </div>
     </Card>
   )

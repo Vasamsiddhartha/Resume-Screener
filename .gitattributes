@@ -1,0 +1,4 @@
+# Large AI model weights — tracked with Git LFS so they don't bloat git history.
+# Run `git lfs install` once per machine before committing these.
+*.onnx filter=lfs diff=lfs merge=lfs -text
+public/skills_taxonomy.json filter=lfs diff=lfs merge=lfs -text

@@ -57,6 +57,8 @@ export function rowToEvaluation(r: Row): ATSEvaluation {
     score: Number(r.score),
     label: r.label,
     similarity: r.similarity != null ? Number(r.similarity) : undefined,
+    domainCompatibility: r.domain_compatibility != null ? Number(r.domain_compatibility) : undefined,
+    skillDepth: r.skill_depth != null ? Number(r.skill_depth) : undefined,
     decision: r.decision ?? undefined,
     evaluatedAt: r.created_at,
     evaluatedBy: r.evaluated_by ?? '',

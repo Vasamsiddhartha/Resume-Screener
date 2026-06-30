@@ -4,7 +4,8 @@ import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { candidateService } from '@/services/candidate.service'
 import { rowToEvaluation } from './mappers'
-import { getPrimaryModelUrl, getFallbackModelUrl } from '@/store/settings.store'
+import { getPrimaryModelUrl, getFallbackModelUrl, getScoringMode } from '@/store/settings.store'
+import { scoreLocally } from '@/ats-engine'
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 let evaluations = [...MOCK_EVALUATIONS]
@@ -46,10 +47,39 @@ function normalizeLabel(raw: unknown, score: number): import('@/types').ATSLabel
   return 'No Fit'
 }
 
+// Score in-browser with the local AI engine (semantic + domain models).
+// No network call per evaluation; models download once and cache in the browser.
+async function scoreWithLocalEngine(payload: ATSRequestPayload): Promise<ATSResponsePayload> {
+  const result = await scoreLocally(payload.resume_text, payload.job_description)
+  const score = Math.round(result.overallScore)
+  return {
+    score,
+    label: normalizeLabel(undefined, score),
+    // breakdown.semanticMatch.score is a 0–100 percentage; expose as a 0–1 fraction
+    // to match the remote endpoint's similarity semantics.
+    similarity: result.breakdown?.semanticMatch
+      ? result.breakdown.semanticMatch.score / 100
+      : undefined,
+    domainCompatibility: typeof result.domainCompatibility === 'number'
+      ? Math.round(result.domainCompatibility)
+      : undefined,
+    skillDepth: typeof result.skillDepth === 'number'
+      ? Math.round(result.skillDepth)
+      : undefined,
+    warnings: result.warnings && result.warnings.length ? result.warnings : undefined,
+  }
+}
+
 export const atsService = {
   async evaluate(payload: ATSRequestPayload): Promise<ATSResponsePayload> {
-    // Try the primary (default) model. If it fails and a fallback model is
-    // configured in Settings → Model, retry with the fallback (read live).
+    // Default: score locally in the browser (no per-evaluation API call).
+    // Users can switch to the hosted endpoint in Settings → Model.
+    if (getScoringMode() === 'local') {
+      return await scoreWithLocalEngine(payload)
+    }
+
+    // Remote mode: try the primary (default) endpoint. If it fails and a
+    // fallback endpoint is configured in Settings → Model, retry with it.
     try {
       return await callModel(getPrimaryModelUrl(), payload)
     } catch (primaryErr) {
@@ -67,7 +97,7 @@ export const atsService = {
     data: Omit<ATSEvaluation, 'id' | 'evaluatedAt'>
   ): Promise<ATSEvaluation> {
     if (supabase) {
-      const { data: row, error } = await supabase.from('evaluations').insert({
+      const base = {
         organization_id: orgId,
         organization_name: data.organizationName ?? null,
         candidate_id: data.candidateId,
@@ -81,9 +111,22 @@ export const atsService = {
         similarity: data.similarity ?? null,
         decision: data.decision ?? null,
         evaluated_by: data.evaluatedBy,
-      }).select().single()
-      if (error) throw error
-      return rowToEvaluation(row)
+      }
+      // domain_compatibility / skill_depth come from the local engine (null for remote).
+      const withSignals = {
+        ...base,
+        domain_compatibility: data.domainCompatibility ?? null,
+        skill_depth: data.skillDepth ?? null,
+      }
+      let res = await supabase.from('evaluations').insert(withSignals).select().single()
+      // If those columns don't exist yet (migration 0012 not applied), retry
+      // without them so saving an evaluation never fails.
+      if (res.error && /domain_compatibility|skill_depth|schema cache|PGRST204/i.test(`${res.error.message ?? ''} ${res.error.code ?? ''}`)) {
+        console.warn('[ATS] evaluation signal columns missing — saving without them. Run supabase migration 0012.', res.error.message)
+        res = await supabase.from('evaluations').insert(base).select().single()
+      }
+      if (res.error) throw res.error
+      return rowToEvaluation(res.data)
     }
 
     await delay(300)

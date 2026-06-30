@@ -176,6 +176,9 @@ export interface ATSEvaluation {
   score: number
   label: ATSLabel
   similarity?: number
+  // Extra signals from the local in-browser engine (null/absent for remote).
+  domainCompatibility?: number
+  skillDepth?: number
   decision?: EvaluationDecision
   evaluatedAt: string
   evaluatedBy: string
@@ -190,6 +193,11 @@ export interface ATSResponsePayload {
   score: number
   label: ATSLabel
   similarity?: number
+  // Extra signals from the local in-browser engine (absent for the remote
+  // endpoint, which only returns score + label + similarity).
+  domainCompatibility?: number // 0–100: how related the resume's domain is to the job's
+  skillDepth?: number          // 0–100: share of job-relevant skills found in the resume
+  warnings?: string[]          // e.g. "No matching skills found…"
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────

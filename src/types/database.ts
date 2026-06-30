@@ -76,6 +76,8 @@ export interface EvaluationRow {
   score: number
   label: EvalLabel
   similarity: number | null
+  domain_compatibility: number | null
+  skill_depth: number | null
   decision: EvalDecision | null
   evaluated_by: string | null
   created_at: string

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, FileText, ArrowRight, ArrowLeft, CheckCircle, Loader2, RotateCcw } from 'lucide-react'
+import { Upload, FileText, ArrowRight, ArrowLeft, CheckCircle, Loader2, RotateCcw, Lightbulb, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CircularProgress } from '@/components/shared/CircularProgress'
 import { Card, Button, Textarea, Input } from '@/components/ui'
@@ -16,6 +16,7 @@ import { evaluationEmail } from '@/lib/emailTemplates'
 import { notify } from '@/store/notifications.store'
 import { cn } from '@/lib/utils'
 import { extractContact } from '@/lib/extractContact'
+import { getScoreGuidance } from '@/lib/atsGuidance'
 import type { ATSResponsePayload } from '@/types'
 
 type Step = 'upload' | 'select-job' | 'review' | 'result'
@@ -206,6 +207,9 @@ export function NewEvaluationPage() {
           resumeText,
           score: response.score,
           label: response.label,
+          similarity: response.similarity,
+          domainCompatibility: response.domainCompatibility,
+          skillDepth: response.skillDepth,
           evaluatedBy: user?.name ?? 'Recruiter',
         })
 
@@ -600,6 +604,46 @@ export function NewEvaluationPage() {
                       </div>
                     )}
 
+                    {/* Domain compatibility (local engine only) */}
+                    {typeof result.domainCompatibility === 'number' && (
+                      <div>
+                        <div className="flex justify-between text-xs mb-1.5">
+                          <span className="text-slate-600 dark:text-slate-400 font-medium">Domain Compatibility</span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">{result.domainCompatibility}%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-1000"
+                            style={{
+                              width: `${Math.min(result.domainCompatibility, 100)}%`,
+                              background: result.domainCompatibility >= 75 ? '#10b981' : result.domainCompatibility >= 50 ? '#eab308' : '#ef4444',
+                            }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">How related the resume's field is to the job's field.</p>
+                      </div>
+                    )}
+
+                    {/* Skill depth (local engine only) */}
+                    {typeof result.skillDepth === 'number' && (
+                      <div>
+                        <div className="flex justify-between text-xs mb-1.5">
+                          <span className="text-slate-600 dark:text-slate-400 font-medium">Skill Depth</span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">{result.skillDepth}%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-1000"
+                            style={{
+                              width: `${Math.min(result.skillDepth, 100)}%`,
+                              background: result.skillDepth >= 50 ? '#10b981' : result.skillDepth >= 30 ? '#eab308' : '#ef4444',
+                            }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Share of the job's key skills found in the resume.</p>
+                      </div>
+                    )}
+
                     {/* Label pill with explanation */}
                     <div className="pt-1 flex items-center justify-between">
                       <span className="text-xs text-slate-500 dark:text-slate-400">Match Classification</span>
@@ -610,6 +654,42 @@ export function NewEvaluationPage() {
 
                   </div>
                 </Card>
+
+                {/* Warnings from the local engine (e.g. no matching skills) */}
+                {result.warnings && result.warnings.length > 0 && (
+                  <Card className="border-amber-300/60 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/10">
+                    <div className="flex gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        {result.warnings.map((w, i) => (
+                          <p key={i} className="text-xs text-amber-800 dark:text-amber-200">{w}</p>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Score-tier guidance / next steps */}
+                {(() => {
+                  const g = getScoreGuidance(result.score ?? 0)
+                  return (
+                    <Card>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Lightbulb className="w-4 h-4 text-blue-500" />
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{g.heading}</h3>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">{g.description}</p>
+                      <ul className="space-y-1.5">
+                        {g.items.map((item, i) => (
+                          <li key={i} className="flex gap-2 text-xs text-slate-600 dark:text-slate-300">
+                            <span className="text-blue-500 shrink-0">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
+                  )
+                })()}
 
                 <div className="flex gap-3">
                   <Button
