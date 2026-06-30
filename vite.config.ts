@@ -4,10 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig(({ command }) => ({
-  // GitHub Pages serves assets from https://<user>.github.io/ATS-Scanner/, so the
-  // base prefix is only needed for the production build. In dev the app is served
-  // from the root for clean local URLs.
-  base: command === 'build' ? '/ATS-Scanner/' : '/',
+  // GitHub Pages serves assets from https://<user>.github.io/Resume-Screener/, so
+  // the base prefix is only needed for the production build. In dev the app is
+  // served from the root for clean local URLs.
+  base: command === 'build' ? '/Resume-Screener/' : '/',
   plugins: [
     tailwindcss(),
     react(),
